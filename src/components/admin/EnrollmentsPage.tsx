@@ -36,7 +36,7 @@ interface Enrollment {
   };
 }
 
-type TabType = 'pending' | 'active' | 'all';
+type TabType = 'pending' | 'active' | 'cancelled' | 'all';
 
 export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -62,6 +62,7 @@ export default function EnrollmentsPage() {
         transport_amount,
         created_at,
         validated_at,
+        rejection_reason,
         children(first_name, last_name),
         activities(name, centers(name)),
         profiles(first_name, last_name, email, phone)
@@ -72,6 +73,8 @@ export default function EnrollmentsPage() {
       query = query.in('status', ['pending_admin_validation', 'pending']);
     } else if (activeTab === 'active') {
       query = query.in('status', ['active', 'confirmed']);
+    } else if (activeTab === 'cancelled') {
+      query = query.in('status', ['cancelled', 'rejected']);
     }
 
     const { data } = await query;
@@ -135,6 +138,7 @@ export default function EnrollmentsPage() {
   const tabs = [
     { id: 'pending' as TabType, label: 'À valider', icon: Clock, color: 'orange' },
     { id: 'active' as TabType, label: 'Validées', icon: Check, color: 'green' },
+    { id: 'cancelled' as TabType, label: 'Annulées', icon: X, color: 'gray' },
     { id: 'all' as TabType, label: 'Toutes', icon: Calendar, color: 'blue' },
   ];
 
@@ -178,12 +182,19 @@ export default function EnrollmentsPage() {
           <LoadingSpinner />
         ) : enrollments.length === 0 ? (
           <EmptyState
-            icon={activeTab === 'pending' ? Clock : activeTab === 'active' ? Check : Calendar}
+            icon={
+              activeTab === 'pending' ? Clock :
+              activeTab === 'active' ? Check :
+              activeTab === 'cancelled' ? X :
+              Calendar
+            }
             message={
               activeTab === 'pending'
                 ? 'Aucune inscription à valider'
                 : activeTab === 'active'
                 ? 'Aucune inscription validée'
+                : activeTab === 'cancelled'
+                ? 'Aucune inscription annulée'
                 : 'Aucune inscription'
             }
           />
@@ -301,6 +312,20 @@ export default function EnrollmentsPage() {
                           minute: '2-digit',
                         })}
                       </p>
+                    </div>
+                  )}
+
+                  {enrollment.rejection_reason && (enrollment.status === 'rejected' || enrollment.status === 'cancelled') && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div className="flex items-start space-x-2">
+                          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-semibold text-red-900 mb-1">Motif de refus:</p>
+                            <p className="text-sm text-red-800">{enrollment.rejection_reason}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

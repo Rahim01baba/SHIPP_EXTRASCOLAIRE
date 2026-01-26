@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { LogOut, Users, Calendar, CreditCard, FileText, Bell, Plus, Edit, Trash2, Phone, Shield, CheckCircle, XCircle, Ban } from 'lucide-react';
+import { LogOut, Users, Calendar, CreditCard, FileText, Bell, Plus, Edit, Trash2, Phone, Shield, CheckCircle, XCircle, Ban, AlertCircle } from 'lucide-react';
 import AddChildModal from '../../components/parent/AddChildModal';
 import EditChildModal from '../../components/parent/EditChildModal';
 import NewEnrollmentModal from '../../components/parent/NewEnrollmentModal';
+import { getEnrollmentStatusLabel, getEnrollmentStatusBadgeVariant, isPendingValidation } from '../../lib/enrollmentStatus';
+import Badge from '../../components/ui/Badge';
 
 interface Child {
   id: string;
@@ -672,22 +674,22 @@ export default function ParentDashboard() {
                           {enrollment.total_amount.toLocaleString('fr-FR')} FCFA
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            enrollment.status === 'active'
-                              ? 'bg-green-100 text-green-700'
-                              : enrollment.status === 'pending_admin_validation'
-                              ? 'bg-orange-100 text-orange-700'
-                              : enrollment.status === 'rejected'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {enrollment.status === 'active' ? 'Active' :
-                             enrollment.status === 'pending_admin_validation' ? 'En attente validation SHIPP' :
-                             enrollment.status === 'rejected' ? 'Refusée' : 'Annulée'}
-                          </span>
-                          {enrollment.status === 'pending_admin_validation' && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              Votre demande est en cours de validation
+                          <Badge variant={getEnrollmentStatusBadgeVariant(enrollment.status)}>
+                            {getEnrollmentStatusLabel(enrollment.status)}
+                          </Badge>
+                          {isPendingValidation(enrollment.status) && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <div className="flex items-center justify-center space-x-2 text-xs text-yellow-800">
+                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                <span>Votre demande est en cours de validation par SHIPP</span>
+                              </div>
+                            </div>
+                          )}
+                          {enrollment.status === 'rejected' && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                              <p className="text-xs text-red-800">
+                                Contactez SHIPP pour plus d'informations
+                              </p>
                             </div>
                           )}
                         </td>
