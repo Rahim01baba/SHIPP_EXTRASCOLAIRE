@@ -45,11 +45,28 @@ export default function EnrollmentsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
+    checkAdminAccess();
     loadEnrollments();
   }, [activeTab]);
 
+  const checkAdminAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[ADMIN ENROLLMENTS] Current user:', user?.id, user?.email);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, email, role')
+      .eq('id', user?.id)
+      .maybeSingle();
+
+    console.log('[ADMIN ENROLLMENTS] User profile:', profile);
+  };
+
   const loadEnrollments = async () => {
     setLoading(true);
+
+    console.log('[ADMIN ENROLLMENTS] Loading enrollments for tab:', activeTab);
+
     let query = supabase
       .from('enrollments')
       .select(`
@@ -70,14 +87,31 @@ export default function EnrollmentsPage() {
       .order('created_at', { ascending: false });
 
     if (activeTab === 'pending') {
+      console.log('[ADMIN ENROLLMENTS] Filtering for pending statuses');
       query = query.in('status', ['pending_admin_validation', 'pending']);
     } else if (activeTab === 'active') {
+      console.log('[ADMIN ENROLLMENTS] Filtering for active statuses');
       query = query.in('status', ['active', 'confirmed']);
     } else if (activeTab === 'cancelled') {
+      console.log('[ADMIN ENROLLMENTS] Filtering for cancelled statuses');
       query = query.in('status', ['cancelled', 'rejected']);
+    } else {
+      console.log('[ADMIN ENROLLMENTS] No filter applied (all enrollments)');
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
+
+    console.log('[ADMIN ENROLLMENTS] Query result:', {
+      dataCount: data?.length || 0,
+      error: error,
+      firstItem: data?.[0],
+      statuses: data?.map(e => e.status)
+    });
+
+    if (error) {
+      console.error('[ADMIN ENROLLMENTS] Error loading enrollments:', error);
+    }
+
     if (data) setEnrollments(data as any);
     setLoading(false);
   };
@@ -181,23 +215,31 @@ export default function EnrollmentsPage() {
         {loading ? (
           <LoadingSpinner />
         ) : enrollments.length === 0 ? (
-          <EmptyState
-            icon={
-              activeTab === 'pending' ? Clock :
-              activeTab === 'active' ? Check :
-              activeTab === 'cancelled' ? X :
-              Calendar
-            }
-            message={
-              activeTab === 'pending'
-                ? 'Aucune inscription à valider'
-                : activeTab === 'active'
-                ? 'Aucune inscription validée'
-                : activeTab === 'cancelled'
-                ? 'Aucune inscription annulée'
-                : 'Aucune inscription'
-            }
-          />
+          <div className="space-y-4">
+            <EmptyState
+              icon={
+                activeTab === 'pending' ? Clock :
+                activeTab === 'active' ? Check :
+                activeTab === 'cancelled' ? X :
+                Calendar
+              }
+              message={
+                activeTab === 'pending'
+                  ? 'Aucune inscription à valider'
+                  : activeTab === 'active'
+                  ? 'Aucune inscription validée'
+                  : activeTab === 'cancelled'
+                  ? 'Aucune inscription annulée'
+                  : 'Aucune inscription'
+              }
+            />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Debug Info:</strong> Ouvrez la console du navigateur (F12) pour voir les logs de diagnostic.
+                Les logs commencent par [ADMIN ENROLLMENTS].
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="space-y-4">
             {enrollments.map((enrollment) => {
