@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Building2, Users, CreditCard, TrendingUp, AlertCircle, CheckCircle, Download, Baby, MapPin, Calendar, FileText, Activity } from 'lucide-react';
+import { Building2, Users, CreditCard, TrendingUp, AlertCircle, CheckCircle, Download, Baby, MapPin, Calendar, FileText, Activity, Clock } from 'lucide-react';
 import { exportToCSV } from '../../lib/csvExport';
 import StatCard from '../ui/StatCard';
 import PageHeader from '../ui/PageHeader';
@@ -125,17 +125,17 @@ export default function DashboardPage() {
         .from('enrollments')
         .select(`
           id,
-          month,
+          enrollment_month,
           status,
           payment_status,
-          amount_total,
+          total_amount,
           child_id,
           activity_id,
           activities!inner(name, center_id, centers!inner(name)),
           children!inner(parent_id, birth_date, profiles!inner(zone_id))
         `)
-        .gte('month', `${filterMonth}-01`)
-        .lt('month', `${filterMonth}-32`);
+        .gte('enrollment_month', `${filterMonth}-01`)
+        .lt('enrollment_month', `${filterMonth}-32`);
 
       if (filterCenter !== 'all') {
         enrollmentsQuery = enrollmentsQuery.eq('activities.center_id', filterCenter);
@@ -164,7 +164,7 @@ export default function DashboardPage() {
 
       const paidCount = filteredEnrollments.filter(e => e.payment_status === 'paid').length;
       const pendingCount = filteredEnrollments.filter(e => e.payment_status === 'pending').length;
-      const totalRevenue = filteredEnrollments.reduce((sum, e) => sum + (e.amount_total || 0), 0);
+      const totalRevenue = filteredEnrollments.reduce((sum, e) => sum + (e.total_amount || 0), 0);
       const pendingValidationCount = filteredEnrollments.filter(e => e.status === 'pending_admin_validation').length;
 
       setStats({
@@ -209,7 +209,7 @@ export default function DashboardPage() {
 
       const center = centerMap.get(centerId);
       center.enrolled_count++;
-      center.total_revenue += e.amount_total || 0;
+      center.total_revenue += e.total_amount || 0;
       if (e.payment_status === 'paid') center.paid_count++;
 
       const activityName = e.activities?.name || 'Inconnu';
@@ -255,7 +255,7 @@ export default function DashboardPage() {
 
       const activity = activityMap.get(activityId);
       activity.enrolled_count++;
-      activity.total_revenue += e.amount_total || 0;
+      activity.total_revenue += e.total_amount || 0;
       if (e.payment_status === 'paid') activity.paid_count++;
     });
 
