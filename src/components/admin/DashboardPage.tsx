@@ -166,7 +166,7 @@ export default function DashboardPage() {
       const paidCount = activeEnrollments.filter(e => e.payment_status === 'paid').length;
       const pendingCount = activeEnrollments.filter(e => e.payment_status === 'pending').length;
       const totalRevenue = activeEnrollments.reduce((sum, e) => sum + (e.total_amount || 0), 0);
-      const pendingValidationCount = filteredEnrollments.filter(e => e.status === 'pending_admin_validation' || e.status === 'pending').length;
+      const pendingValidationCount = filteredEnrollments.filter(e => e.status === 'pending_admin_validation').length;
 
       setStats({
         totalParents: parentsData?.length || 0,

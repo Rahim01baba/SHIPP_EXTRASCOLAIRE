@@ -3,7 +3,6 @@ export type EnrollmentStatus =
   | 'active'
   | 'rejected'
   | 'cancelled'
-  | 'pending'
   | 'confirmed';
 
 export const ENROLLMENT_STATUS = {
@@ -11,12 +10,12 @@ export const ENROLLMENT_STATUS = {
   ACTIVE: 'active' as const,
   REJECTED: 'rejected' as const,
   CANCELLED: 'cancelled' as const,
+  CONFIRMED: 'confirmed' as const,
 };
 
 export function getEnrollmentStatusLabel(status: string): string {
   switch (status) {
     case 'pending_admin_validation':
-    case 'pending':
       return 'En attente validation SHIPP';
     case 'active':
     case 'confirmed':
@@ -33,7 +32,6 @@ export function getEnrollmentStatusLabel(status: string): string {
 export function getEnrollmentStatusColor(status: string): 'yellow' | 'green' | 'red' | 'gray' {
   switch (status) {
     case 'pending_admin_validation':
-    case 'pending':
       return 'yellow';
     case 'active':
     case 'confirmed':
@@ -50,7 +48,6 @@ export function getEnrollmentStatusColor(status: string): 'yellow' | 'green' | '
 export function getEnrollmentStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
   switch (status) {
     case 'pending_admin_validation':
-    case 'pending':
       return 'warning';
     case 'active':
     case 'confirmed':
@@ -65,7 +62,6 @@ export function getEnrollmentStatusBadgeVariant(status: string): 'success' | 'wa
 }
 
 export function normalizeEnrollmentStatus(status: string): string {
-  if (status === 'pending') return 'pending_admin_validation';
   if (status === 'confirmed') return 'active';
   return status;
 }
@@ -75,5 +71,5 @@ export function isActiveEnrollment(status: string): boolean {
 }
 
 export function isPendingValidation(status: string): boolean {
-  return status === 'pending_admin_validation' || status === 'pending';
+  return status === 'pending_admin_validation';
 }

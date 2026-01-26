@@ -87,13 +87,13 @@ export default function EnrollmentsPage() {
       .order('created_at', { ascending: false });
 
     if (activeTab === 'pending') {
-      console.log('[ADMIN ENROLLMENTS] Filtering for pending statuses');
-      query = query.in('status', ['pending_admin_validation', 'pending']);
+      console.log('[ADMIN ENROLLMENTS] Filtering for pending_admin_validation status');
+      query = query.eq('status', 'pending_admin_validation');
     } else if (activeTab === 'active') {
       console.log('[ADMIN ENROLLMENTS] Filtering for active statuses');
       query = query.in('status', ['active', 'confirmed']);
     } else if (activeTab === 'cancelled') {
-      console.log('[ADMIN ENROLLMENTS] Filtering for cancelled statuses');
+      console.log('[ADMIN ENROLLMENTS] Filtering for cancelled/rejected statuses');
       query = query.in('status', ['cancelled', 'rejected']);
     } else {
       console.log('[ADMIN ENROLLMENTS] No filter applied (all enrollments)');
@@ -161,7 +161,7 @@ export default function EnrollmentsPage() {
 
   const getTabCount = (tab: TabType) => {
     if (tab === 'pending') {
-      return enrollments.filter(e => e.status === 'pending_admin_validation' || e.status === 'pending').length;
+      return enrollments.filter(e => e.status === 'pending_admin_validation').length;
     }
     if (tab === 'active') {
       return enrollments.filter(e => e.status === 'active' || e.status === 'confirmed').length;
@@ -243,7 +243,7 @@ export default function EnrollmentsPage() {
         ) : (
           <div className="space-y-4">
             {enrollments.map((enrollment) => {
-              const isPending = enrollment.status === 'pending_admin_validation' || enrollment.status === 'pending';
+              const isPending = enrollment.status === 'pending_admin_validation';
               const isProcessing = processing === enrollment.id;
 
               return (
