@@ -507,20 +507,13 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
                     </span>
                   </div>
 
-                  <div className="border-t border-blue-300 pt-2 mt-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tarif formation:</span>
-                      <span className="font-medium">{activityDetails.course_price.toLocaleString('fr-FR')} FCFA</span>
-                    </div>
-
-                    <div className="flex justify-between mt-1">
-                      <span className="text-gray-600">Tarif transport:</span>
-                      <span className="font-medium">{activityDetails.transport_price.toLocaleString('fr-FR')} FCFA</span>
-                    </div>
-
-                    <div className="flex justify-between mt-2 pt-2 border-t border-blue-300">
-                      <span className="font-semibold text-gray-900">TOTAL:</span>
-                      <span className="font-bold text-lg text-blue-600">
+                  <div className="border-t border-blue-300 pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-semibold text-gray-900 block">TOTAL MENSUEL</span>
+                        <span className="text-xs text-gray-600">Activité + transport aller-retour</span>
+                      </div>
+                      <span className="font-bold text-2xl text-blue-600">
                         {activityDetails.total_price.toLocaleString('fr-FR')} FCFA
                       </span>
                     </div>
@@ -530,7 +523,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> Le paiement mensuel sera validé par l'administrateur après réception de votre règlement.
+                  <strong>Important:</strong> Votre demande d'inscription sera validée par SHIPP. Vous serez notifié dès confirmation, puis vous pourrez procéder au paiement.
                 </p>
               </div>
             </div>

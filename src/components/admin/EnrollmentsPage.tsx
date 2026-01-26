@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Check, X, Clock, Users, Calendar, Filter } from 'lucide-react';
+import { Check, X, Clock, AlertCircle, Calendar } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import Badge from '../ui/Badge';
 import EmptyState from '../ui/EmptyState';
+import { getEnrollmentStatusLabel, getEnrollmentStatusBadgeVariant } from '../../lib/enrollmentStatus';
 
 interface Enrollment {
   id: string;
@@ -15,6 +16,8 @@ interface Enrollment {
   course_amount: number;
   transport_amount: number;
   created_at: string;
+  validated_at?: string;
+  rejection_reason?: string;
   children: {
     first_name: string;
     last_name: string;
@@ -29,18 +32,21 @@ interface Enrollment {
     first_name: string;
     last_name: string;
     email: string;
+    phone?: string;
   };
 }
+
+type TabType = 'pending' | 'active' | 'all';
 
 export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>('pending_admin_validation');
+  const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
     loadEnrollments();
-  }, [filterStatus]);
+  }, [activeTab]);
 
   const loadEnrollments = async () => {
     setLoading(true);
@@ -55,14 +61,17 @@ export default function EnrollmentsPage() {
         course_amount,
         transport_amount,
         created_at,
+        validated_at,
         children(first_name, last_name),
         activities(name, centers(name)),
-        profiles(first_name, last_name, email)
+        profiles(first_name, last_name, email, phone)
       `)
       .order('created_at', { ascending: false });
 
-    if (filterStatus !== 'all') {
-      query = query.eq('status', filterStatus);
+    if (activeTab === 'pending') {
+      query = query.in('status', ['pending_admin_validation', 'pending']);
+    } else if (activeTab === 'active') {
+      query = query.in('status', ['active', 'confirmed']);
     }
 
     const { data } = await query;
@@ -71,7 +80,7 @@ export default function EnrollmentsPage() {
   };
 
   const handleApprove = async (enrollmentId: string) => {
-    if (!confirm('Approuver cette inscription ?')) return;
+    if (!confirm('Valider cette inscription ? Le parent et le centre seront notifiés.')) return;
 
     setProcessing(enrollmentId);
     const { error } = await supabase
@@ -100,8 +109,7 @@ export default function EnrollmentsPage() {
       .from('enrollments')
       .update({
         status: 'rejected',
-        rejected_reason: reason.trim(),
-        rejected_at: new Date().toISOString()
+        rejection_reason: reason.trim()
       })
       .eq('id', enrollmentId);
 
@@ -114,158 +122,193 @@ export default function EnrollmentsPage() {
     setProcessing(null);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending_admin_validation':
-        return <Badge variant="warning">En attente validation</Badge>;
-      case 'active':
-        return <Badge variant="success">Active</Badge>;
-      case 'rejected':
-        return <Badge variant="danger">Refusée</Badge>;
-      case 'cancelled':
-        return <Badge variant="neutral">Annulée</Badge>;
-      default:
-        return <Badge variant="neutral">{status}</Badge>;
+  const getTabCount = (tab: TabType) => {
+    if (tab === 'pending') {
+      return enrollments.filter(e => e.status === 'pending_admin_validation' || e.status === 'pending').length;
     }
+    if (tab === 'active') {
+      return enrollments.filter(e => e.status === 'active' || e.status === 'confirmed').length;
+    }
+    return enrollments.length;
   };
 
-  if (loading) {
-    return <LoadingSpinner size="lg" text="Chargement des inscriptions..." />;
-  }
+  const tabs = [
+    { id: 'pending' as TabType, label: 'À valider', icon: Clock, color: 'orange' },
+    { id: 'active' as TabType, label: 'Validées', icon: Check, color: 'green' },
+    { id: 'all' as TabType, label: 'Toutes', icon: Calendar, color: 'blue' },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
-        title="Gestion des Inscriptions"
-        description="Validez ou refusez les demandes d'inscription des parents"
+        title="Gestion des inscriptions"
+        subtitle="Validez ou refusez les demandes d'inscription"
       />
 
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <div className="flex items-center space-x-4">
-          <Filter className="w-5 h-5 text-gray-500" />
-          <label className="text-sm font-medium text-gray-700">Filtrer par statut:</label>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="pending_admin_validation">En attente validation</option>
-            <option value="active">Actives</option>
-            <option value="rejected">Refusées</option>
-            <option value="cancelled">Annulées</option>
-            <option value="all">Toutes</option>
-          </select>
-          <div className="flex-1"></div>
-          <div className="text-sm text-gray-600">
-            {enrollments.length} inscription{enrollments.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex space-x-1 mb-6 border-b">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const count = activeTab === tab.id ? enrollments.length : 0;
 
-      {enrollments.length === 0 ? (
-        <EmptyState
-          icon={Calendar}
-          title="Aucune inscription"
-          description={
-            filterStatus === 'pending_admin_validation'
-              ? "Il n'y a actuellement aucune inscription en attente de validation."
-              : "Aucune inscription ne correspond aux critères sélectionnés."
-          }
-        />
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Parent
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Enfant
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Centre / Activité
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mois
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Montant
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {enrollments.map((enrollment) => (
-                  <tr key={enrollment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {enrollment.profiles.first_name} {enrollment.profiles.last_name}
-                      </div>
-                      <div className="text-xs text-gray-500">{enrollment.profiles.email}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {enrollment.children.first_name} {enrollment.children.last_name}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {enrollment.activities.centers.name}
-                      </div>
-                      <div className="text-xs text-gray-500">{enrollment.activities.name}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {new Date(enrollment.enrollment_month).toLocaleDateString('fr-FR', {
-                        year: 'numeric',
-                        month: 'long'
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="text-sm font-semibold text-gray-900">
-                        {enrollment.total_amount.toLocaleString('fr-FR')} FCFA
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Cours: {enrollment.course_amount.toLocaleString('fr-FR')} |
-                        Transport: {enrollment.transport_amount.toLocaleString('fr-FR')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {getStatusBadge(enrollment.status)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {enrollment.status === 'pending_admin_validation' && (
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => handleApprove(enrollment.id)}
-                            disabled={processing === enrollment.id}
-                            className="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium disabled:opacity-50"
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Valider
-                          </button>
-                          <button
-                            onClick={() => handleReject(enrollment.id)}
-                            disabled={processing === enrollment.id}
-                            className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm font-medium disabled:opacity-50"
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Refuser
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition font-medium ${
+                  isActive
+                    ? `border-${tab.color}-600 text-${tab.color}-600`
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{tab.label}</span>
+                {isActive && enrollments.length > 0 && (
+                  <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-${tab.color}-100 text-${tab.color}-700`}>
+                    {enrollments.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-      )}
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : enrollments.length === 0 ? (
+          <EmptyState
+            icon={activeTab === 'pending' ? Clock : activeTab === 'active' ? Check : Calendar}
+            message={
+              activeTab === 'pending'
+                ? 'Aucune inscription à valider'
+                : activeTab === 'active'
+                ? 'Aucune inscription validée'
+                : 'Aucune inscription'
+            }
+          />
+        ) : (
+          <div className="space-y-4">
+            {enrollments.map((enrollment) => {
+              const isPending = enrollment.status === 'pending_admin_validation' || enrollment.status === 'pending';
+              const isProcessing = processing === enrollment.id;
+
+              return (
+                <div
+                  key={enrollment.id}
+                  className={`border rounded-lg p-4 ${
+                    isPending ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-semibold text-lg">
+                          {enrollment.children.first_name} {enrollment.children.last_name}
+                        </h3>
+                        <Badge variant={getEnrollmentStatusBadgeVariant(enrollment.status)}>
+                          {getEnrollmentStatusLabel(enrollment.status)}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Parent:</span>
+                          <span className="ml-2 font-medium">
+                            {enrollment.profiles.first_name} {enrollment.profiles.last_name}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600">Email:</span>
+                          <span className="ml-2 font-medium">{enrollment.profiles.email}</span>
+                        </div>
+
+                        {enrollment.profiles.phone && (
+                          <div>
+                            <span className="text-gray-600">Téléphone:</span>
+                            <span className="ml-2 font-medium">{enrollment.profiles.phone}</span>
+                          </div>
+                        )}
+
+                        <div>
+                          <span className="text-gray-600">Activité:</span>
+                          <span className="ml-2 font-medium">{enrollment.activities.name}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600">Centre:</span>
+                          <span className="ml-2 font-medium">{enrollment.activities.centers.name}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600">Mois:</span>
+                          <span className="ml-2 font-medium">
+                            {new Date(enrollment.enrollment_month).toLocaleDateString('fr-FR', {
+                              year: 'numeric',
+                              month: 'long',
+                            })}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600">Demande créée:</span>
+                          <span className="ml-2 font-medium">
+                            {new Date(enrollment.created_at).toLocaleDateString('fr-FR')}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600">Montant total:</span>
+                          <span className="ml-2 font-bold text-blue-600">
+                            {enrollment.total_amount?.toLocaleString('fr-FR') || 0} FCFA
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isPending && (
+                    <div className="flex items-center justify-end space-x-3 pt-3 border-t">
+                      <button
+                        onClick={() => handleReject(enrollment.id)}
+                        disabled={isProcessing}
+                        className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-4 h-4" />
+                        <span>Refuser</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleApprove(enrollment.id)}
+                        disabled={isProcessing}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Valider</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {enrollment.validated_at && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs text-gray-600">
+                        Validée le {new Date(enrollment.validated_at).toLocaleDateString('fr-FR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

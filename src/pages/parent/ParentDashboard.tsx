@@ -424,7 +424,7 @@ export default function ParentDashboard() {
                   <Calendar className="w-8 h-8 text-green-600" />
                 </div>
                 <p className="text-3xl font-bold">
-                  {enrollments.filter(e => e.status === 'active').length}
+                  {enrollments.filter(e => e.status === 'active' || e.status === 'confirmed').length}
                 </p>
               </div>
               <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -434,10 +434,11 @@ export default function ParentDashboard() {
                 </div>
                 <p className="text-3xl font-bold">
                   {enrollments
-                    .filter(e => e.status === 'confirmed')
+                    .filter(e => e.status === 'active' || e.status === 'confirmed')
                     .reduce((sum, e) => sum + parseFloat(e.total_amount.toString()), 0)
                     .toLocaleString('fr-FR')} FCFA
                 </p>
+                <p className="text-xs text-gray-600 mt-2">Activité + transport aller-retour</p>
               </div>
             </div>
 
@@ -604,6 +605,27 @@ export default function ParentDashboard() {
                 <span>Nouvelle inscription</span>
               </button>
             </div>
+
+            {enrollments.some(e => (e.status === 'active' || e.status === 'confirmed') && e.payment_status === 'pending') && (
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-200 rounded-xl p-6">
+                <h3 className="font-bold text-lg text-gray-900 mb-3">Paiement par dépôt</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start space-x-2">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Wave / Orange Money:</span>
+                    <span className="font-bold text-blue-700 text-lg">07 88 36 03 14</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Libellé:</span>
+                    <span className="text-gray-900">"SHIPP + Nom enfant + Mois"</span>
+                  </div>
+                  <div className="mt-4 bg-white rounded-lg p-3 border border-blue-200">
+                    <p className="text-xs text-gray-700">
+                      <strong>Note:</strong> Après votre dépôt, contactez-nous pour confirmer votre paiement. Une fois validé, votre inscription sera mise à jour automatiquement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {enrollments.length === 0 ? (
               <div className="bg-white rounded-xl p-12 text-center">

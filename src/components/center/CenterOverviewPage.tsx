@@ -71,19 +71,19 @@ export default function CenterOverviewPage({ center }: { center: Center }) {
       .lte('enrollment_month', monthEnd);
 
     if (enrollments) {
-      const uniqueChildren = new Set(enrollments.map(e => e.child_id)).size;
-      const activeEnrollments = enrollments.filter(e => e.status === 'confirmed').length;
-      const theoreticalRevenue = enrollments
-        .filter(e => e.status === 'confirmed')
+      const activeEnrollmentsData = enrollments.filter(e => e.status === 'active' || e.status === 'confirmed');
+      const uniqueChildren = new Set(activeEnrollmentsData.map(e => e.child_id)).size;
+      const activeEnrollmentsCount = activeEnrollmentsData.length;
+      const theoreticalRevenue = activeEnrollmentsData
         .reduce((sum, e) => sum + (e.amount_total || 0), 0);
-      const paidRevenue = enrollments
+      const paidRevenue = activeEnrollmentsData
         .filter(e => e.payment_status === 'paid')
         .reduce((sum, e) => sum + (e.amount_total || 0), 0);
-      const pendingPayments = enrollments.filter(e => e.payment_status === 'pending').length;
+      const pendingPayments = activeEnrollmentsData.filter(e => e.payment_status === 'pending').length;
 
       setKpis({
         enrolledChildren: uniqueChildren,
-        activeEnrollments,
+        activeEnrollments: activeEnrollmentsCount,
         theoreticalRevenue,
         paidRevenue,
         pendingPayments,

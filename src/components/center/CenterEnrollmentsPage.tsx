@@ -78,7 +78,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
         activities(name)
       `)
       .eq('center_id', center.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'confirmed'])
       .gte('enrollment_month', monthStart)
       .lte('enrollment_month', monthEnd)
       .order('created_at', { ascending: false });
@@ -157,6 +157,12 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
           <FileDown className="w-5 h-5" />
           <span>Exporter CSV</span>
         </button>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Information:</strong> Les inscriptions sont validées par SHIPP. Vous êtes notifié automatiquement lorsqu'une nouvelle inscription est confirmée pour votre centre.
+        </p>
       </div>
 
       <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">

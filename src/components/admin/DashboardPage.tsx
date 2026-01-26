@@ -162,24 +162,25 @@ export default function DashboardPage() {
         });
       }
 
-      const paidCount = filteredEnrollments.filter(e => e.payment_status === 'paid').length;
-      const pendingCount = filteredEnrollments.filter(e => e.payment_status === 'pending').length;
-      const totalRevenue = filteredEnrollments.reduce((sum, e) => sum + (e.total_amount || 0), 0);
-      const pendingValidationCount = filteredEnrollments.filter(e => e.status === 'pending_admin_validation').length;
+      const activeEnrollments = filteredEnrollments.filter(e => e.status === 'active' || e.status === 'confirmed');
+      const paidCount = activeEnrollments.filter(e => e.payment_status === 'paid').length;
+      const pendingCount = activeEnrollments.filter(e => e.payment_status === 'pending').length;
+      const totalRevenue = activeEnrollments.reduce((sum, e) => sum + (e.total_amount || 0), 0);
+      const pendingValidationCount = filteredEnrollments.filter(e => e.status === 'pending_admin_validation' || e.status === 'pending').length;
 
       setStats({
         totalParents: parentsData?.length || 0,
         totalChildren: childrenData?.length || 0,
-        enrolledThisMonth: filteredEnrollments.length,
+        enrolledThisMonth: activeEnrollments.length,
         paidThisMonth: paidCount,
         pendingThisMonth: pendingCount,
         theoreticalRevenue: totalRevenue,
         pendingValidation: pendingValidationCount,
       });
 
-      loadCenterPerformance(filteredEnrollments);
-      loadActivityPerformance(filteredEnrollments);
-      loadZoneDistribution(childrenData || [], filteredEnrollments);
+      loadCenterPerformance(activeEnrollments);
+      loadActivityPerformance(activeEnrollments);
+      loadZoneDistribution(childrenData || [], activeEnrollments);
       loadAgeDistribution(childrenData || [], filteredEnrollments);
     } catch (error) {
       console.error('Erreur chargement stats:', error);
