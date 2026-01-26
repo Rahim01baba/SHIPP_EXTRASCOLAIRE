@@ -259,7 +259,12 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
         return;
       }
 
-      console.log('[NewEnrollment] Enrollment created successfully:', enrollmentData.id);
+      console.log('[NewEnrollment] Enrollment created successfully:', {
+        id: enrollmentData.id,
+        status: enrollmentData.status,
+        payment_status: enrollmentData.payment_status,
+        total_amount: enrollmentData.total_amount,
+      });
       onSuccess();
       onClose();
     } catch (err: any) {
