@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Building2, Users, CreditCard, TrendingUp, AlertCircle, CheckCircle, Download, Baby, MapPin, Calendar } from 'lucide-react';
+import { Building2, Users, CreditCard, TrendingUp, AlertCircle, CheckCircle, Download, Baby, MapPin, Calendar, FileText, Activity } from 'lucide-react';
 import { exportToCSV } from '../../lib/csvExport';
+import StatCard from '../ui/StatCard';
+import PageHeader from '../ui/PageHeader';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface DashboardStats {
   totalParents: number;
@@ -382,19 +385,15 @@ export default function DashboardPage() {
     : activities.filter(a => a.center_id === filterCenter);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" text="Chargement des statistiques..." />;
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Statistiques et pilotage de la plateforme SHIPP</p>
-      </div>
+      <PageHeader
+        title="Dashboard Administrateur"
+        description="Vue d'ensemble et statistiques de la plateforme SHIPP Education"
+      />
 
       <div className="bg-white rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold mb-4">Filtres</h3>
@@ -473,23 +472,49 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {[
-          { title: 'Parents', value: stats.totalParents, icon: Users, color: 'blue' },
-          { title: 'Enfants', value: stats.totalChildren, icon: Baby, color: 'green' },
-          { title: 'Inscrits ce mois', value: stats.enrolledThisMonth, icon: CheckCircle, color: 'yellow' },
-          { title: 'Paiements payés', value: stats.paidThisMonth, icon: CheckCircle, color: 'green' },
-          { title: 'En attente', value: stats.pendingThisMonth, icon: AlertCircle, color: 'orange' },
-          { title: 'CA théorique', value: `${stats.theoreticalRevenue.toLocaleString('fr-FR')} FCFA`, icon: TrendingUp, color: 'purple' },
-        ].map((card) => (
-          <div key={card.title} className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-medium text-gray-600">{card.title}</h3>
-              <card.icon className={`w-4 h-4 text-${card.color}-600`} />
-            </div>
-            <p className="text-lg font-bold text-gray-900">{card.value}</p>
-          </div>
-        ))}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Parents"
+          value={stats.totalParents.toLocaleString('fr-FR')}
+          icon={Users}
+          iconColor="text-blue-600"
+          description="Utilisateurs enregistrés"
+        />
+        <StatCard
+          title="Total Enfants"
+          value={stats.totalChildren.toLocaleString('fr-FR')}
+          icon={Baby}
+          iconColor="text-green-600"
+          description="Enfants dans le système"
+        />
+        <StatCard
+          title="Inscriptions Actives"
+          value={stats.enrolledThisMonth.toLocaleString('fr-FR')}
+          icon={CheckCircle}
+          iconColor="text-blue-600"
+          description="Ce mois"
+        />
+        <StatCard
+          title="Paiements Reçus"
+          value={stats.paidThisMonth.toLocaleString('fr-FR')}
+          icon={CheckCircle}
+          iconColor="text-green-600"
+          description="Paiements confirmés"
+        />
+        <StatCard
+          title="En Attente"
+          value={stats.pendingThisMonth.toLocaleString('fr-FR')}
+          icon={AlertCircle}
+          iconColor="text-orange-600"
+          description="Paiements à valider"
+        />
+        <StatCard
+          title="Chiffre d'Affaires"
+          value={`${stats.theoreticalRevenue.toLocaleString('fr-FR')} FCFA`}
+          icon={TrendingUp}
+          iconColor="text-purple-600"
+          description="CA théorique du mois"
+        />
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Users, Activity, DollarSign, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, Activity, DollarSign, Clock, TrendingUp, AlertCircle, Building2, Percent } from 'lucide-react';
+import StatCard from '../ui/StatCard';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface Center {
   id: string;
@@ -161,77 +163,75 @@ export default function CenterOverviewPage({ center }: { center: Center }) {
   const centerShare = 100 - center.shipp_commission_pct;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" text="Chargement de votre tableau de bord..." />;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
-        <div className="flex items-center space-x-2">
-          <label className="text-sm font-medium text-gray-700">Mois:</label>
+    <div className="space-y-8">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 text-white shadow-lg">
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+            <Building2 className="w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">Bienvenue, {center.name}</h1>
+            <p className="text-blue-100 mt-1">Voici un aperçu de votre performance ce mois-ci</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2 mt-6">
+          <label className="text-sm font-medium">Période:</label>
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+            className="px-4 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:ring-2 focus:ring-white focus:ring-opacity-50"
           />
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-blue-500">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Enfants inscrits</h3>
-            <Users className="w-5 h-5 text-blue-500" />
-          </div>
-          <p className="text-2xl font-bold">{kpis.enrolledChildren}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-green-500">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Inscriptions actives</h3>
-            <Activity className="w-5 h-5 text-green-500" />
-          </div>
-          <p className="text-2xl font-bold">{kpis.activeEnrollments}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-yellow-500">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">CA théorique</h3>
-            <TrendingUp className="w-5 h-5 text-yellow-500" />
-          </div>
-          <p className="text-xl font-bold">{kpis.theoreticalRevenue.toLocaleString('fr-FR')} F</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-emerald-500">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total encaissé</h3>
-            <DollarSign className="w-5 h-5 text-emerald-500" />
-          </div>
-          <p className="text-xl font-bold">{kpis.paidRevenue.toLocaleString('fr-FR')} F</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-orange-500">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Paiements en attente</h3>
-            <Clock className="w-5 h-5 text-orange-500" />
-          </div>
-          <p className="text-2xl font-bold">{kpis.pendingPayments}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-gray-500">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Part centre</h3>
-            <AlertCircle className="w-5 h-5 text-gray-500" />
-          </div>
-          <p className="text-2xl font-bold">{centerShare}%</p>
-          <p className="text-xs text-gray-500 mt-1">SHIPP: {center.shipp_commission_pct}%</p>
-        </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+          title="Enfants Inscrits"
+          value={kpis.enrolledChildren}
+          icon={Users}
+          iconColor="text-blue-600"
+          description="Ce mois-ci"
+        />
+        <StatCard
+          title="Inscriptions Actives"
+          value={kpis.activeEnrollments}
+          icon={Activity}
+          iconColor="text-green-600"
+          description="Confirmées"
+        />
+        <StatCard
+          title="CA Théorique"
+          value={`${kpis.theoreticalRevenue.toLocaleString('fr-FR')} FCFA`}
+          icon={TrendingUp}
+          iconColor="text-purple-600"
+          description="Chiffre d'affaires prévu"
+        />
+        <StatCard
+          title="Total Encaissé"
+          value={`${kpis.paidRevenue.toLocaleString('fr-FR')} FCFA`}
+          icon={DollarSign}
+          iconColor="text-green-600"
+          description="Paiements reçus"
+        />
+        <StatCard
+          title="En Attente"
+          value={kpis.pendingPayments}
+          icon={Clock}
+          iconColor="text-orange-600"
+          description="Paiements à valider"
+        />
+        <StatCard
+          title="Part Centre"
+          value={`${centerShare}%`}
+          icon={Percent}
+          iconColor="text-gray-600"
+          description={`Commission SHIPP: ${center.shipp_commission_pct}%`}
+        />
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

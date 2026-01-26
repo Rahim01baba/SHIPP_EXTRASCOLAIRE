@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Activity, Plus, Edit2, Power, Trash2, AlertCircle, Clock, Users, DollarSign, Lock } from 'lucide-react';
 import AddEditActivityModal from './AddEditActivityModal';
+import PageHeader from '../ui/PageHeader';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import EmptyState from '../ui/EmptyState';
+import Badge from '../ui/Badge';
 
 interface Center {
   id: string;
@@ -88,53 +92,43 @@ export default function CenterActivitiesPage({ center }: { center: Center }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" text="Chargement des activités..." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Mes activités</h1>
-          {!center.allow_center_edit_prices && (
-            <p className="text-sm text-gray-500 mt-1 flex items-center space-x-1">
-              <Lock className="w-4 h-4" />
-              <span>Les tarifs sont verrouillés par l'administrateur</span>
-            </p>
-          )}
-        </div>
-        <button
-          onClick={() => {
-            setEditingActivity(null);
-            setShowModal(true);
-          }}
-          className="flex items-center space-x-2 bg-yellow-400 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nouvelle activité</span>
-        </button>
-      </div>
-
-      {activities.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-          <Activity className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Aucune activité</h3>
-          <p className="text-gray-500 mb-6">Commencez par créer votre première activité</p>
+      <PageHeader
+        title="Mes Activités"
+        description={
+          !center.allow_center_edit_prices
+            ? "Gérez vos activités. Les tarifs sont verrouillés par l'administrateur."
+            : "Gérez vos activités et fixez vos tarifs."
+        }
+        action={
           <button
             onClick={() => {
               setEditingActivity(null);
               setShowModal(true);
             }}
-            className="inline-flex items-center space-x-2 bg-yellow-400 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition"
+            className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm"
           >
             <Plus className="w-5 h-5" />
-            <span>Créer une activité</span>
+            <span>Nouvelle activité</span>
           </button>
-        </div>
+        }
+      />
+
+      {activities.length === 0 ? (
+        <EmptyState
+          icon={Activity}
+          title="Aucune activité"
+          description="Commencez par créer votre première activité pour accueillir des enfants."
+          actionLabel="Créer une activité"
+          onAction={() => {
+            setEditingActivity(null);
+            setShowModal(true);
+          }}
+        />
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activities.map((activity) => {
@@ -149,18 +143,16 @@ export default function CenterActivitiesPage({ center }: { center: Center }) {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg mb-1">{activity.name}</h3>
+                    <h3 className="font-bold text-lg mb-2">{activity.name}</h3>
                     {activity.activity_types && (
-                      <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                      <Badge variant="neutral" size="sm">
                         {activity.activity_types.name}
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    activity.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  <Badge variant={activity.is_active ? 'success' : 'neutral'} size="sm">
                     {activity.is_active ? 'Actif' : 'Inactif'}
-                  </div>
+                  </Badge>
                 </div>
 
                 {activity.description && (

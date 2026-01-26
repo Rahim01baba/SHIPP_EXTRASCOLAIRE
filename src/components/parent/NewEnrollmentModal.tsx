@@ -441,13 +441,19 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
                           className="w-4 h-4 text-blue-600 mt-1"
                         />
                         <div className="ml-3 flex-1">
-                          <p className="font-medium">{activity.name}</p>
+                          <p className="font-medium text-lg">{activity.name}</p>
                           {activity.description && (
                             <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
                           )}
-                          <p className="text-sm font-semibold text-blue-600 mt-2">
-                            {activity.total_price.toLocaleString('fr-FR')} FCFA/mois
-                          </p>
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-2xl font-bold text-blue-700">
+                              {activity.total_price.toLocaleString('fr-FR')} FCFA
+                              <span className="text-sm font-normal text-blue-600">/mois</span>
+                            </p>
+                            <p className="text-xs text-blue-600 mt-1">
+                              Activité + transport aller-retour inclus
+                            </p>
+                          </div>
                         </div>
                       </label>
                     ))}
