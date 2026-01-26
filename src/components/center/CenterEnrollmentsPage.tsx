@@ -43,7 +43,6 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
   });
   const [activityFilter, setActivityFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
     loadActivities();
@@ -51,7 +50,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
 
   useEffect(() => {
     loadEnrollments();
-  }, [center.id, month, activityFilter, paymentFilter, statusFilter]);
+  }, [center.id, month, activityFilter, paymentFilter]);
 
   const loadActivities = async () => {
     const { data } = await supabase
@@ -79,6 +78,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
         activities(name)
       `)
       .eq('center_id', center.id)
+      .eq('status', 'active')
       .gte('enrollment_month', monthStart)
       .lte('enrollment_month', monthEnd)
       .order('created_at', { ascending: false });
@@ -89,10 +89,6 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
 
     if (paymentFilter) {
       query = query.eq('payment_status', paymentFilter);
-    }
-
-    if (statusFilter) {
-      query = query.eq('status', statusFilter);
     }
 
     const { data } = await query;
@@ -123,12 +119,14 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">Actif</span>;
+      case 'active':
+        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">Active</span>;
       case 'cancelled':
-        return <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">Annulé</span>;
-      case 'pending':
-        return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">En attente</span>;
+        return <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">Annulée</span>;
+      case 'pending_admin_validation':
+        return <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold">En attente</span>;
+      case 'rejected':
+        return <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">Refusée</span>;
       default:
         return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold">{status}</span>;
     }
@@ -167,7 +165,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
           <h3 className="font-semibold">Filtres</h3>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Mois</label>
             <input
@@ -204,20 +202,11 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
               <option value="pending">En attente</option>
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-            >
-              <option value="">Tous</option>
-              <option value="confirmed">Actif</option>
-              <option value="cancelled">Annulé</option>
-              <option value="pending">En attente</option>
-            </select>
-          </div>
+        </div>
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> Seules les inscriptions validées par SHIPP sont affichées ici.
+          </p>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ interface DashboardStats {
   paidThisMonth: number;
   pendingThisMonth: number;
   theoreticalRevenue: number;
+  pendingValidation: number;
 }
 
 interface CenterPerformance {
@@ -62,6 +63,7 @@ export default function DashboardPage() {
     paidThisMonth: 0,
     pendingThisMonth: 0,
     theoreticalRevenue: 0,
+    pendingValidation: 0,
   });
 
   const [centers, setCenters] = useState<any[]>([]);
@@ -163,6 +165,7 @@ export default function DashboardPage() {
       const paidCount = filteredEnrollments.filter(e => e.payment_status === 'paid').length;
       const pendingCount = filteredEnrollments.filter(e => e.payment_status === 'pending').length;
       const totalRevenue = filteredEnrollments.reduce((sum, e) => sum + (e.amount_total || 0), 0);
+      const pendingValidationCount = filteredEnrollments.filter(e => e.status === 'pending_admin_validation').length;
 
       setStats({
         totalParents: parentsData?.length || 0,
@@ -171,6 +174,7 @@ export default function DashboardPage() {
         paidThisMonth: paidCount,
         pendingThisMonth: pendingCount,
         theoreticalRevenue: totalRevenue,
+        pendingValidation: pendingValidationCount,
       });
 
       loadCenterPerformance(filteredEnrollments);
@@ -488,6 +492,13 @@ export default function DashboardPage() {
           description="Enfants dans le système"
         />
         <StatCard
+          title="À Valider"
+          value={stats.pendingValidation.toLocaleString('fr-FR')}
+          icon={Clock}
+          iconColor="text-orange-600"
+          description="Inscriptions en attente"
+        />
+        <StatCard
           title="Inscriptions Actives"
           value={stats.enrolledThisMonth.toLocaleString('fr-FR')}
           icon={CheckCircle}
@@ -500,13 +511,6 @@ export default function DashboardPage() {
           icon={CheckCircle}
           iconColor="text-green-600"
           description="Paiements confirmés"
-        />
-        <StatCard
-          title="En Attente"
-          value={stats.pendingThisMonth.toLocaleString('fr-FR')}
-          icon={AlertCircle}
-          iconColor="text-orange-600"
-          description="Paiements à valider"
         />
         <StatCard
           title="Chiffre d'Affaires"

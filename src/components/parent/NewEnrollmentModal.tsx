@@ -238,7 +238,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
           child_id: selectedChild,
           activity_id: selectedActivity,
           enrollment_month: enrollmentDate,
-          status: 'confirmed',
+          status: 'pending_admin_validation',
           payment_status: 'pending',
           course_amount: activityDetails.course_price,
           transport_amount: activityDetails.transport_price,

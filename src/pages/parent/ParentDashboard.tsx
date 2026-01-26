@@ -424,7 +424,7 @@ export default function ParentDashboard() {
                   <Calendar className="w-8 h-8 text-green-600" />
                 </div>
                 <p className="text-3xl font-bold">
-                  {enrollments.filter(e => e.status === 'confirmed').length}
+                  {enrollments.filter(e => e.status === 'active').length}
                 </p>
               </div>
               <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -651,15 +651,23 @@ export default function ParentDashboard() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            enrollment.status === 'confirmed'
+                            enrollment.status === 'active'
                               ? 'bg-green-100 text-green-700'
-                              : enrollment.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-red-100 text-red-700'
+                              : enrollment.status === 'pending_admin_validation'
+                              ? 'bg-orange-100 text-orange-700'
+                              : enrollment.status === 'rejected'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
                           }`}>
-                            {enrollment.status === 'confirmed' ? 'Active' :
-                             enrollment.status === 'pending' ? 'En attente' : 'Annulée'}
+                            {enrollment.status === 'active' ? 'Active' :
+                             enrollment.status === 'pending_admin_validation' ? 'En attente validation SHIPP' :
+                             enrollment.status === 'rejected' ? 'Refusée' : 'Annulée'}
                           </span>
+                          {enrollment.status === 'pending_admin_validation' && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Votre demande est en cours de validation
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
