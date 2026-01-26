@@ -23,9 +23,9 @@ interface Enrollment {
   enrollment_month: string;
   status: string;
   payment_status: string;
-  course_price: number;
-  transport_price: number;
-  total_price: number;
+  course_amount: number;
+  transport_amount: number;
+  total_amount: number;
   center_name: string;
   activity_name: string;
   child_name: string;
@@ -90,6 +90,7 @@ export default function InvoicesManagementPage() {
   }, [selectedEnrollment, enrollments]);
 
   const loadParents = async () => {
+    console.log('[INVOICES] Loading parents...');
     const { data, error: fetchError } = await supabase
       .from('profiles')
       .select('id, full_name, email, phone')
@@ -97,20 +98,23 @@ export default function InvoicesManagementPage() {
       .order('full_name');
 
     if (fetchError) {
-      console.error('Erreur chargement parents:', fetchError);
+      console.error('[INVOICES] Error loading parents:', fetchError);
       setError('Erreur lors du chargement des parents');
       return;
     }
 
+    console.log('[INVOICES] Parents loaded:', data?.length);
     setParents(data || []);
   };
 
   const loadParentDetails = async (parentId: string) => {
     const parent = parents.find(p => p.id === parentId);
+    console.log('[INVOICES] Parent selected:', parent?.full_name);
     setParentDetails(parent || null);
   };
 
   const loadChildren = async (parentId: string) => {
+    console.log('[INVOICES] Loading children for parent:', parentId);
     const { data, error: fetchError } = await supabase
       .from('children')
       .select('id, first_name, last_name, birth_date')
@@ -118,11 +122,12 @@ export default function InvoicesManagementPage() {
       .order('first_name');
 
     if (fetchError) {
-      console.error('Erreur chargement enfants:', fetchError);
+      console.error('[INVOICES] Error loading children:', fetchError);
       setError('Erreur lors du chargement des enfants');
       return;
     }
 
+    console.log('[INVOICES] Children loaded:', data?.length);
     setChildren(data || []);
     if (data && data.length > 0) {
       setSelectedChild(data[0].id);
@@ -131,51 +136,138 @@ export default function InvoicesManagementPage() {
 
   const loadEnrollments = async (parentId: string, childId: string, month: string) => {
     const monthDate = `${month}-01`;
+    console.log('[INVOICES] Loading enrollments for:', { parentId, childId, monthDate });
 
-    const { data, error: fetchError } = await supabase
-      .from('enrollments')
-      .select(`
-        id,
-        enrollment_month,
-        status,
-        payment_status,
-        course_price,
-        transport_price,
-        total_price,
-        centers!inner(name),
-        activities!inner(name),
-        children!inner(first_name, last_name)
-      `)
-      .eq('parent_id', parentId)
-      .eq('child_id', childId)
-      .eq('enrollment_month', monthDate);
+    setError('');
+    setEnrollments([]);
 
-    if (fetchError) {
-      console.error('Erreur chargement inscriptions:', fetchError);
-      setError('Erreur lors du chargement des inscriptions');
-      return;
-    }
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('enrollments')
+        .select(`
+          id,
+          enrollment_month,
+          status,
+          payment_status,
+          course_amount,
+          transport_amount,
+          total_amount,
+          activities (
+            name,
+            centers ( name )
+          ),
+          children ( first_name, last_name )
+        `)
+        .eq('parent_id', parentId)
+        .eq('child_id', childId)
+        .eq('enrollment_month', monthDate);
 
-    if (data && data.length > 0) {
-      const formatted = data.map((e: any) => ({
+      if (fetchError) {
+        console.error('[INVOICES] Error loading enrollments (with joins):', fetchError);
+        console.log('[INVOICES] Attempting fallback without joins...');
+
+        const { data: baseData, error: baseError } = await supabase
+          .from('enrollments')
+          .select('id, enrollment_month, status, payment_status, course_amount, transport_amount, total_amount, activity_id, child_id')
+          .eq('parent_id', parentId)
+          .eq('child_id', childId)
+          .eq('enrollment_month', monthDate);
+
+        if (baseError) {
+          console.error('[INVOICES] Error loading enrollments (fallback):', baseError);
+          setError(`Erreur lors du chargement des inscriptions: ${baseError.message}`);
+          return;
+        }
+
+        if (!baseData || baseData.length === 0) {
+          console.log('[INVOICES] No enrollments found');
+          setError('Aucune inscription trouvée pour ce mois');
+          return;
+        }
+
+        console.log('[INVOICES] Base enrollments loaded:', baseData.length);
+
+        const activityIds = [...new Set(baseData.map((e: any) => e.activity_id))];
+        const childIds = [...new Set(baseData.map((e: any) => e.child_id))];
+
+        const [activitiesResult, childrenResult] = await Promise.all([
+          supabase.from('activities').select('id, name, center_id').in('id', activityIds),
+          supabase.from('children').select('id, first_name, last_name').in('id', childIds),
+        ]);
+
+        console.log('[INVOICES] Activities loaded:', activitiesResult.data?.length);
+        console.log('[INVOICES] Children loaded:', childrenResult.data?.length);
+
+        const centerIds = [...new Set((activitiesResult.data || []).map((a: any) => a.center_id))];
+        const { data: centersData } = await supabase
+          .from('centers')
+          .select('id, name')
+          .in('id', centerIds);
+
+        console.log('[INVOICES] Centers loaded:', centersData?.length);
+
+        const activitiesMap = new Map((activitiesResult.data || []).map((a: any) => [a.id, a]));
+        const centersMap = new Map((centersData || []).map((c: any) => [c.id, c]));
+        const childrenMap = new Map((childrenResult.data || []).map((c: any) => [c.id, c]));
+
+        const formatted = baseData.map((e: any) => {
+          const activity = activitiesMap.get(e.activity_id);
+          const center = activity ? centersMap.get(activity.center_id) : null;
+          const child = childrenMap.get(e.child_id);
+
+          return {
+            id: e.id,
+            enrollment_month: e.enrollment_month,
+            status: e.status,
+            payment_status: e.payment_status,
+            course_amount: e.course_amount ?? 0,
+            transport_amount: e.transport_amount ?? 0,
+            total_amount: e.total_amount ?? ((e.course_amount ?? 0) + (e.transport_amount ?? 0)),
+            center_name: center?.name ?? '—',
+            activity_name: activity?.name ?? '—',
+            child_name: child ? `${child.first_name} ${child.last_name}` : '—',
+          };
+        });
+
+        console.log('[INVOICES] Enrollments formatted (fallback):', formatted.length);
+        setEnrollments(formatted);
+
+        if (formatted.length > 0) {
+          setSelectedEnrollment(formatted[0].id);
+        }
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('[INVOICES] No enrollments found');
+        setError('Aucune inscription trouvée pour ce mois');
+        return;
+      }
+
+      console.log('[INVOICES] Enrollments loaded (with joins):', data.length);
+
+      const formatted = (data ?? []).map((e: any) => ({
         id: e.id,
         enrollment_month: e.enrollment_month,
         status: e.status,
         payment_status: e.payment_status,
-        course_price: e.course_price,
-        transport_price: e.transport_price,
-        total_price: e.total_price,
-        center_name: e.centers.name,
-        activity_name: e.activities.name,
-        child_name: `${e.children.first_name} ${e.children.last_name}`,
+        course_amount: e.course_amount ?? 0,
+        transport_amount: e.transport_amount ?? 0,
+        total_amount: e.total_amount ?? ((e.course_amount ?? 0) + (e.transport_amount ?? 0)),
+        center_name: e.activities?.centers?.name ?? '—',
+        activity_name: e.activities?.name ?? '—',
+        child_name: `${e.children?.first_name ?? ''} ${e.children?.last_name ?? ''}`.trim(),
       }));
 
+      console.log('[INVOICES] Enrollments formatted:', formatted.length);
       setEnrollments(formatted);
-      setSelectedEnrollment(formatted[0].id);
-    } else {
-      setEnrollments([]);
-      setSelectedEnrollment('');
-      setError('Aucune inscription active pour ce mois');
+
+      if (formatted.length > 0) {
+        setSelectedEnrollment(formatted[0].id);
+      }
+    } catch (err) {
+      console.error('[INVOICES] Exception loading enrollments:', err);
+      setError(`Erreur inattendue: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
     }
   };
 
@@ -190,23 +282,25 @@ export default function InvoicesManagementPage() {
     setSuccess('');
 
     try {
+      console.log('[INVOICES] Validating payment for enrollment:', selectedEnrollment);
       const { error: updateError } = await supabase
         .from('enrollments')
         .update({ payment_status: 'completed' })
         .eq('id', selectedEnrollment);
 
       if (updateError) {
-        console.error('Erreur validation paiement:', updateError);
+        console.error('[INVOICES] Error validating payment:', updateError);
         setError(`Erreur lors de la validation: ${updateError.message}`);
         return;
       }
 
+      console.log('[INVOICES] Payment validated successfully');
       setEnrollmentDetails({ ...enrollmentDetails, payment_status: 'completed' });
       setSuccess('Paiement validé avec succès');
 
       await loadEnrollments(selectedParent, selectedChild, selectedMonth);
     } catch (err) {
-      console.error('Exception validation paiement:', err);
+      console.error('[INVOICES] Exception validating payment:', err);
       setError('Une erreur inattendue est survenue');
     } finally {
       setProcessing(false);
@@ -219,6 +313,11 @@ export default function InvoicesManagementPage() {
       return;
     }
 
+    if (enrollmentDetails.status !== 'active' && enrollmentDetails.status !== 'confirmed') {
+      setError('Inscription non validée — facture indisponible');
+      return;
+    }
+
     setProcessing(true);
     setError('');
 
@@ -226,7 +325,7 @@ export default function InvoicesManagementPage() {
       const invoiceNumber = `INV-${Date.now()}`;
       const monthDate = new Date(enrollmentDetails.enrollment_month);
 
-      console.log('[InvoicesManagement] Creating invoice...');
+      console.log('[INVOICES] Creating invoice record...');
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
@@ -238,9 +337,9 @@ export default function InvoicesManagementPage() {
           child_name: enrollmentDetails.child_name,
           activity_name: enrollmentDetails.activity_name,
           center_name: enrollmentDetails.center_name,
-          course_price: enrollmentDetails.course_price,
-          transport_price: enrollmentDetails.transport_price,
-          total_amount: enrollmentDetails.total_price,
+          course_price: enrollmentDetails.course_amount,
+          transport_price: enrollmentDetails.transport_amount,
+          total_amount: enrollmentDetails.total_amount,
           invoice_sent: false,
         })
         .select()
@@ -248,18 +347,19 @@ export default function InvoicesManagementPage() {
 
       if (invoiceError) {
         if (invoiceError.code === '23505') {
-          console.log('[InvoicesManagement] Invoice already exists');
+          console.log('[INVOICES] Invoice already exists, continuing...');
         } else {
-          console.error('[InvoicesManagement] Error creating invoice:', invoiceError);
-          alert(`Erreur lors de la création de la facture: ${invoiceError.message}`);
+          console.error('[INVOICES] Error creating invoice:', invoiceError);
+          setError(`Erreur lors de la création de la facture: ${invoiceError.message}`);
           return;
         }
       }
 
       if (invoiceData) {
-        console.log('[InvoicesManagement] Invoice created successfully:', invoiceData.id);
+        console.log('[INVOICES] Invoice created:', invoiceData.id);
       }
 
+      console.log('[INVOICES] Generating PDF...');
       const pdf = generateInvoicePDF({
         invoiceNumber,
         invoiceDate: new Date().toLocaleDateString('fr-FR'),
@@ -269,15 +369,16 @@ export default function InvoicesManagementPage() {
         childName: enrollmentDetails.child_name,
         centerName: enrollmentDetails.center_name,
         activityName: enrollmentDetails.activity_name,
-        coursePrice: enrollmentDetails.course_price,
-        transportPrice: enrollmentDetails.transport_price,
-        totalAmount: enrollmentDetails.total_price,
+        coursePrice: enrollmentDetails.course_amount,
+        transportPrice: enrollmentDetails.transport_amount,
+        totalAmount: enrollmentDetails.total_amount,
       });
 
       downloadInvoice(pdf, `facture_${invoiceNumber}.pdf`);
+      console.log('[INVOICES] Invoice downloaded successfully');
       setSuccess('Facture téléchargée avec succès');
     } catch (err) {
-      console.error('Exception génération facture:', err);
+      console.error('[INVOICES] Exception generating invoice:', err);
       setError('Erreur lors de la génération de la facture');
     } finally {
       setProcessing(false);
@@ -295,6 +396,7 @@ export default function InvoicesManagementPage() {
     setSuccess('');
 
     try {
+      console.log('[INVOICES] Marking invoice as sent for enrollment:', selectedEnrollment);
       const { error: updateError } = await supabase
         .from('invoices')
         .update({
@@ -305,19 +407,23 @@ export default function InvoicesManagementPage() {
         .eq('enrollment_id', selectedEnrollment);
 
       if (updateError) {
-        console.error('Erreur mise à jour facture:', updateError);
+        console.error('[INVOICES] Error marking invoice as sent:', updateError);
         setError(`Erreur: ${updateError.message}`);
         return;
       }
 
+      console.log('[INVOICES] Invoice marked as sent');
       setSuccess('Facture marquée comme envoyée');
     } catch (err) {
-      console.error('Exception:', err);
+      console.error('[INVOICES] Exception:', err);
       setError('Une erreur inattendue est survenue');
     } finally {
       setProcessing(false);
     }
   };
+
+  const canGenerateInvoice = enrollmentDetails &&
+    (enrollmentDetails.status === 'active' || enrollmentDetails.status === 'confirmed');
 
   return (
     <div className="space-y-6">
@@ -476,23 +582,36 @@ export default function InvoicesManagementPage() {
                   <div className="border-t border-gray-300 pt-3 mt-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tarif formation:</span>
-                      <span className="font-medium">{enrollmentDetails.course_price.toLocaleString('fr-FR')} FCFA</span>
+                      <span className="font-medium">{enrollmentDetails.course_amount.toLocaleString('fr-FR')} FCFA</span>
                     </div>
 
                     <div className="flex justify-between mt-2">
                       <span className="text-gray-600">Tarif transport:</span>
-                      <span className="font-medium">{enrollmentDetails.transport_price.toLocaleString('fr-FR')} FCFA</span>
+                      <span className="font-medium">{enrollmentDetails.transport_amount.toLocaleString('fr-FR')} FCFA</span>
                     </div>
 
                     <div className="flex justify-between mt-3 pt-3 border-t border-gray-300">
                       <span className="font-semibold text-lg">TOTAL:</span>
                       <span className="font-bold text-lg text-yellow-600">
-                        {enrollmentDetails.total_price.toLocaleString('fr-FR')} FCFA
+                        {enrollmentDetails.total_amount.toLocaleString('fr-FR')} FCFA
                       </span>
                     </div>
                   </div>
 
                   <div className="flex justify-between pt-3 border-t border-gray-300">
+                    <span className="text-gray-600">Statut inscription:</span>
+                    <span className={`font-medium ${
+                      enrollmentDetails.status === 'active' || enrollmentDetails.status === 'confirmed'
+                        ? 'text-green-600'
+                        : 'text-orange-600'
+                    }`}>
+                      {enrollmentDetails.status === 'active' || enrollmentDetails.status === 'confirmed'
+                        ? 'Validée'
+                        : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
                     <span className="text-gray-600">Statut paiement:</span>
                     <span className={`font-medium ${
                       enrollmentDetails.payment_status === 'completed' ? 'text-green-600' : 'text-orange-600'
@@ -502,6 +621,16 @@ export default function InvoicesManagementPage() {
                   </div>
                 </div>
               </div>
+
+              {!canGenerateInvoice && (
+                <div className="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-start space-x-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-semibold">Inscription non validée</p>
+                    <p>La facture ne peut être générée que pour les inscriptions validées.</p>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-white rounded-xl p-6 shadow-sm space-y-3">
                 <h3 className="font-semibold mb-4">Actions</h3>
@@ -519,8 +648,8 @@ export default function InvoicesManagementPage() {
 
                 <button
                   onClick={downloadPDF}
-                  disabled={processing}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                  disabled={processing || !canGenerateInvoice}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   <Download className="w-5 h-5" />
                   <span>Télécharger en PDF</span>
@@ -528,8 +657,8 @@ export default function InvoicesManagementPage() {
 
                 <button
                   onClick={markInvoiceSent}
-                  disabled={processing}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition disabled:opacity-50 font-medium"
+                  disabled={processing || !canGenerateInvoice}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   <Send className="w-5 h-5" />
                   <span>Marquer facture envoyée</span>
