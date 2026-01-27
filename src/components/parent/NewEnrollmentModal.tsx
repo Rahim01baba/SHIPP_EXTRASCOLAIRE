@@ -237,6 +237,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
           parent_id: user.id,
           child_id: selectedChild,
           activity_id: selectedActivity,
+          center_id: selectedCenter,
           enrollment_month: enrollmentDate,
           status: 'pending_admin_validation',
           payment_status: 'pending',
@@ -265,6 +266,26 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
         payment_status: enrollmentData.payment_status,
         total_amount: enrollmentData.total_amount,
       });
+
+      const paymentReference = `PAY-${Date.now()}-${enrollmentData.id.substring(0, 8)}`;
+      console.log('[NewEnrollment] Creating payment record...');
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          parent_id: user.id,
+          enrollment_id: enrollmentData.id,
+          amount: enrollmentData.total_amount,
+          status: 'pending',
+          payment_method: 'mobile_money',
+          payment_reference: paymentReference,
+        });
+
+      if (paymentError) {
+        console.error('[NewEnrollment] Error creating payment:', paymentError);
+      } else {
+        console.log('[NewEnrollment] Payment record created:', paymentReference);
+      }
+
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -526,10 +547,29 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>Important:</strong> Votre demande d'inscription sera validée par SHIPP. Vous serez notifié dès confirmation, puis vous pourrez procéder au paiement.
-                </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-yellow-900 font-semibold mb-2">
+                    Prochaines étapes
+                  </p>
+                  <ol className="text-sm text-yellow-800 space-y-2 list-decimal list-inside">
+                    <li>Votre demande sera validée par SHIPP (vous recevrez une notification)</li>
+                    <li>Procédez au paiement par Wave/Orange Money</li>
+                  </ol>
+                </div>
+
+                <div className="bg-yellow-100 border border-yellow-300 rounded p-3">
+                  <p className="text-xs font-semibold text-yellow-900 mb-1">
+                    Informations de paiement
+                  </p>
+                  <p className="text-sm text-yellow-800">
+                    <strong>Numéro:</strong> 0788360314 (Wave / Orange Money)
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-2">
+                    Votre référence de paiement vous sera communiquée après validation de votre inscription.
+                    Pensez à indiquer cette référence en motif lors de votre dépôt.
+                  </p>
+                </div>
               </div>
             </div>
           )}

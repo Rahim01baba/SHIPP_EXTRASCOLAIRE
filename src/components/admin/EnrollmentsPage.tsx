@@ -258,11 +258,15 @@ export default function EnrollmentsPage() {
     if (!confirm('Valider cette inscription ? Le parent et le centre seront notifiés.')) return;
 
     setProcessing(enrollmentId);
+
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { error } = await supabase
       .from('enrollments')
       .update({
         status: 'active',
-        validated_at: new Date().toISOString()
+        validated_at: new Date().toISOString(),
+        validated_by: user?.id
       })
       .eq('id', enrollmentId);
 

@@ -608,22 +608,32 @@ export default function ParentDashboard() {
               </button>
             </div>
 
-            {enrollments.some(e => (e.status === 'active' || e.status === 'confirmed') && e.payment_status === 'pending') && (
-              <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-200 rounded-xl p-6">
-                <h3 className="font-bold text-lg text-gray-900 mb-3">Paiement par dépôt</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start space-x-2">
-                    <span className="font-semibold text-gray-700 min-w-[120px]">Wave / Orange Money:</span>
-                    <span className="font-bold text-blue-700 text-lg">07 88 36 03 14</span>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="font-semibold text-gray-700 min-w-[120px]">Libellé:</span>
-                    <span className="text-gray-900">"SHIPP + Nom enfant + Mois"</span>
-                  </div>
-                  <div className="mt-4 bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="text-xs text-gray-700">
-                      <strong>Note:</strong> Après votre dépôt, contactez-nous pour confirmer votre paiement. Une fois validé, votre inscription sera mise à jour automatiquement.
+            {enrollments.some(e => e.payment_status === 'pending') && (
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-6">
+                <h3 className="font-bold text-lg text-gray-900 mb-3 flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-600" />
+                  <span>Informations de paiement</span>
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="bg-white rounded-lg p-4 border-2 border-yellow-200">
+                    <p className="text-sm text-gray-700 mb-3">
+                      <strong>Numéro de paiement Wave/Orange Money:</strong>
                     </p>
+                    <p className="font-bold text-blue-700 text-2xl mb-3">0788360314</p>
+                    <p className="text-xs text-gray-600">
+                      <strong>Libellé suggéré:</strong> SHIPP + Nom enfant + Mois
+                    </p>
+                  </div>
+                  <div className="bg-yellow-100 rounded-lg p-3 border border-yellow-300">
+                    <p className="text-xs text-yellow-900 font-semibold mb-2">
+                      Important:
+                    </p>
+                    <ul className="text-xs text-yellow-800 space-y-1 list-disc list-inside">
+                      <li>Votre inscription sera d'abord validée par SHIPP</li>
+                      <li>Vous recevrez une notification de validation</li>
+                      <li>Vous pourrez ensuite procéder au paiement</li>
+                      <li>Après votre dépôt, l'admin SHIPP validera votre paiement</li>
+                    </ul>
                   </div>
                 </div>
               </div>

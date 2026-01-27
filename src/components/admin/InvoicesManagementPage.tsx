@@ -325,13 +325,59 @@ export default function InvoicesManagementPage() {
       const invoiceNumber = `INV-${Date.now()}`;
       const monthDate = new Date(enrollmentDetails.enrollment_month);
 
-      console.log('[INVOICES] Creating invoice record...');
+      console.log('[INVOICES] Looking for existing payment for enrollment:', selectedEnrollment);
+      let paymentId: string | null = null;
+
+      const { data: existingPayment } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('enrollment_id', selectedEnrollment)
+        .maybeSingle();
+
+      if (existingPayment) {
+        console.log('[INVOICES] Found existing payment:', existingPayment.id);
+        paymentId = existingPayment.id;
+      } else {
+        console.log('[INVOICES] No payment found, creating one...');
+        const paymentReference = `PAY-${Date.now()}-${selectedEnrollment.substring(0, 8)}`;
+        const { data: newPayment, error: paymentError } = await supabase
+          .from('payments')
+          .insert({
+            parent_id: selectedParent,
+            enrollment_id: selectedEnrollment,
+            amount: enrollmentDetails.total_amount,
+            status: 'pending',
+            payment_method: 'mobile_money',
+            payment_reference: paymentReference,
+          })
+          .select('id')
+          .single();
+
+        if (paymentError) {
+          console.error('[INVOICES] Error creating payment:', paymentError);
+          setError(`Erreur lors de la création du paiement: ${paymentError.message}`);
+          return;
+        }
+
+        if (newPayment) {
+          console.log('[INVOICES] Payment created:', newPayment.id);
+          paymentId = newPayment.id;
+        }
+      }
+
+      if (!paymentId) {
+        setError('Impossible de créer ou trouver le paiement associé');
+        return;
+      }
+
+      console.log('[INVOICES] Creating invoice record with payment_id:', paymentId);
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
           parent_id: selectedParent,
           child_id: selectedChild,
           enrollment_id: selectedEnrollment,
+          payment_id: paymentId,
           invoice_number: invoiceNumber,
           invoice_date: enrollmentDetails.enrollment_month,
           child_name: enrollmentDetails.child_name,
