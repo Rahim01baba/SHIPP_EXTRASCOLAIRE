@@ -16,7 +16,8 @@ interface Enrollment {
   total_amount: number;
   created_at: string;
   children: {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     date_of_birth: string;
   };
   profiles: {
@@ -73,7 +74,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
       .from('enrollments')
       .select(`
         *,
-        children(full_name, date_of_birth),
+        children(first_name, last_name, date_of_birth),
         profiles(full_name, phone),
         activities(name)
       `)
@@ -272,7 +273,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {enrollment.children?.full_name || 'N/A'}
+                          {enrollment.children ? `${enrollment.children.first_name} ${enrollment.children.last_name}` : 'N/A'}
                         </div>
                         {enrollment.children?.date_of_birth && (
                           <div className="text-sm text-gray-500">

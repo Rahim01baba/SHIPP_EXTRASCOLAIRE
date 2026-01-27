@@ -20,7 +20,8 @@ interface Enrollment {
   payment_note: string | null;
   child: {
     id: string;
-    full_name: string;
+    first_name: string;
+    last_name: string;
   };
   activity: {
     id: string;
@@ -92,7 +93,7 @@ export default function PaymentsPage() {
         payment_status,
         paid_at,
         payment_note,
-        child:children!enrollments_child_id_fkey(id, full_name),
+        child:children!enrollments_child_id_fkey(id, first_name, last_name),
         activity:activities!enrollments_activity_id_fkey(
           id,
           name,
@@ -208,7 +209,7 @@ export default function PaymentsPage() {
     const parent = parents.find(p => p.id === selectedParent);
     const dataToExport = enrollments.map(e => ({
       mois: formatMonth(e.enrollment_month),
-      enfant: e.child?.full_name || 'N/A',
+      enfant: e.child ? `${e.child.first_name} ${e.child.last_name}` : 'N/A',
       centre: e.activity?.center?.name || 'N/A',
       activite: e.activity?.name || 'N/A',
       montant: e.total_amount,
@@ -442,7 +443,7 @@ export default function PaymentsPage() {
                           <div className="flex items-center space-x-2">
                             <User className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-900">
-                              {enrollment.child?.full_name || 'N/A'}
+                              {enrollment.child ? `${enrollment.child.first_name} ${enrollment.child.last_name}` : 'N/A'}
                             </span>
                           </div>
                         </td>
