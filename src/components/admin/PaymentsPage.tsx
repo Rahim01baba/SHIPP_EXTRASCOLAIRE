@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Download, Check, X, DollarSign, User, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, DollarSign, Calendar, CheckCircle, AlertCircle, Clock, XCircle, User } from 'lucide-react';
 import { exportToCSV } from '../../lib/csvExport';
 
 interface Parent {
@@ -10,14 +10,26 @@ interface Parent {
   phone: string;
 }
 
-interface MonthlyPayment {
-  month: string;
-  monthDate: Date;
-  isPaid: boolean;
-  amount: number;
-  paymentId: string | null;
-  validatedAt: string | null;
-  validatedBy: string | null;
+interface Enrollment {
+  id: string;
+  enrollment_month: string;
+  total_amount: number;
+  status: string;
+  payment_status: string;
+  paid_at: string | null;
+  payment_note: string | null;
+  child: {
+    id: string;
+    full_name: string;
+  };
+  activity: {
+    id: string;
+    name: string;
+    center: {
+      id: string;
+      name: string;
+    };
+  };
 }
 
 const MONTHS_FR = [
@@ -28,9 +40,9 @@ const MONTHS_FR = [
 export default function PaymentsPage() {
   const [parents, setParents] = useState<Parent[]>([]);
   const [selectedParent, setSelectedParent] = useState('');
-  const [monthlyPayments, setMonthlyPayments] = useState<MonthlyPayment[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
+  const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -40,9 +52,9 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     if (selectedParent) {
-      loadMonthlyPayments(selectedParent);
+      loadEnrollments(selectedParent);
     } else {
-      setMonthlyPayments([]);
+      setEnrollments([]);
     }
   }, [selectedParent]);
 
@@ -66,70 +78,48 @@ export default function PaymentsPage() {
     setLoading(false);
   };
 
-  const loadMonthlyPayments = async (parentId: string) => {
+  const loadEnrollments = async (parentId: string) => {
     setLoading(true);
     setError('');
 
-    const currentYear = new Date().getFullYear();
-    const monthsData: MonthlyPayment[] = [];
+    const { data, error: fetchError } = await supabase
+      .from('enrollments')
+      .select(`
+        id,
+        enrollment_month,
+        total_amount,
+        status,
+        payment_status,
+        paid_at,
+        payment_note,
+        child:children!enrollments_child_id_fkey(id, full_name),
+        activity:activities!enrollments_activity_id_fkey(
+          id,
+          name,
+          center:centers!activities_center_id_fkey(id, name)
+        )
+      `)
+      .eq('parent_id', parentId)
+      .eq('is_deleted', false)
+      .order('enrollment_month', { ascending: false });
 
-    for (let month = 0; month < 12; month++) {
-      const monthDate = new Date(currentYear, month, 1);
-      const monthStr = `${currentYear}-${String(month + 1).padStart(2, '0')}-01`;
-
-      const { data: enrollments } = await supabase
-        .from('enrollments')
-        .select('course_price, transport_price')
-        .eq('parent_id', parentId)
-        .eq('status', 'confirmed')
-        .lte('enrollment_month', monthStr);
-
-      let totalAmount = 0;
-      if (enrollments && enrollments.length > 0) {
-        totalAmount = enrollments.reduce((sum, e) =>
-          sum + (Number(e.course_price) || 0) + (Number(e.transport_price) || 0), 0
-        );
-      }
-
-      const { data: payment } = await supabase
-        .from('payments')
-        .select('id, status, paid_at, enrollment_id')
-        .eq('parent_id', parentId)
-        .gte('paid_at', `${currentYear}-${String(month + 1).padStart(2, '0')}-01`)
-        .lt('paid_at', `${currentYear}-${String(month + 2).padStart(2, '0')}-01`)
-        .eq('status', 'completed')
-        .maybeSingle();
-
-      monthsData.push({
-        month: MONTHS_FR[month],
-        monthDate,
-        isPaid: !!payment,
-        amount: totalAmount,
-        paymentId: payment?.id || null,
-        validatedAt: payment?.paid_at || null,
-        validatedBy: null,
-      });
+    if (fetchError) {
+      console.error('[ADMIN] Erreur chargement inscriptions:', fetchError);
+      setError(`Erreur: ${fetchError.message}`);
+      setLoading(false);
+      return;
     }
 
-    setMonthlyPayments(monthsData);
+    setEnrollments(data || []);
     setLoading(false);
   };
 
-  const handleValidatePayment = async (monthIndex: number) => {
-    if (!selectedParent) return;
-
-    const monthPayment = monthlyPayments[monthIndex];
-    if (monthPayment.isPaid) {
-      setError('Ce paiement a déjà été validé');
-      return;
-    }
-
-    if (monthPayment.amount === 0) {
-      setError('Aucune inscription active pour ce mois');
-      return;
-    }
-
-    setProcessing(true);
+  const updatePaymentStatus = async (
+    enrollmentId: string,
+    newStatus: string,
+    shouldSetPaidAt: boolean
+  ) => {
+    setProcessing(enrollmentId);
     setError('');
     setSuccess('');
 
@@ -140,59 +130,92 @@ export default function PaymentsPage() {
         return;
       }
 
-      const { data: enrollments } = await supabase
-        .from('enrollments')
+      const { data: profile } = await supabase
+        .from('profiles')
         .select('id')
-        .eq('parent_id', selectedParent)
-        .eq('status', 'confirmed')
-        .limit(1);
+        .eq('user_id', user.id)
+        .single();
 
-      if (!enrollments || enrollments.length === 0) {
-        setError('Aucune inscription trouvée');
+      if (!profile) {
+        setError('Profil non trouvé');
         return;
       }
 
-      const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const updateData: any = {
+        payment_status: newStatus,
+        payment_marked_by: profile.id,
+        paid_at: shouldSetPaidAt ? new Date().toISOString() : null
+      };
 
-      const { error: insertError } = await supabase
-        .from('payments')
-        .insert({
-          enrollment_id: enrollments[0].id,
-          parent_id: selectedParent,
-          amount: monthPayment.amount,
-          payment_method: 'cash',
-          payment_reference: paymentRef,
-          status: 'completed',
-          paid_at: monthPayment.monthDate.toISOString(),
-        });
+      const { data, error: updateError } = await supabase
+        .from('enrollments')
+        .update(updateData)
+        .eq('id', enrollmentId)
+        .select('id, payment_status');
 
-      if (insertError) {
-        console.error('Erreur validation paiement:', insertError);
-        setError(`Erreur: ${insertError.message}`);
+      if (updateError) {
+        console.error('[ADMIN] Erreur mise à jour paiement:', updateError);
+        setError(`Erreur: ${updateError.message}`);
         return;
       }
 
-      setSuccess(`Paiement de ${monthPayment.month} validé avec succès`);
+      if (!data || data.length === 0) {
+        setError('Aucune inscription mise à jour. Vérifiez les permissions RLS.');
+        return;
+      }
+
+      const statusLabels: { [key: string]: string } = {
+        paid: 'payée',
+        late: 'en retard',
+        pending: 'en attente',
+        cancelled: 'annulée'
+      };
+
+      setSuccess(`Inscription marquée comme ${statusLabels[newStatus] || newStatus}`);
       setTimeout(() => setSuccess(''), 3000);
 
-      await loadMonthlyPayments(selectedParent);
+      await loadEnrollments(selectedParent);
     } catch (err: any) {
-      console.error('Exception validation paiement:', err);
+      console.error('[ADMIN] Exception mise à jour paiement:', err);
       setError(`Erreur inattendue: ${err.message}`);
     } finally {
-      setProcessing(false);
+      setProcessing(null);
     }
   };
 
+  const handleMarkPaid = (enrollmentId: string) => {
+    if (!confirm('Marquer ce paiement comme payé ?')) return;
+    updatePaymentStatus(enrollmentId, 'paid', true);
+  };
+
+  const handleMarkLate = (enrollmentId: string) => {
+    if (!confirm('Marquer ce paiement comme en retard ?')) return;
+    updatePaymentStatus(enrollmentId, 'late', false);
+  };
+
+  const handleMarkPending = (enrollmentId: string) => {
+    updatePaymentStatus(enrollmentId, 'pending', false);
+  };
+
+  const handleMarkCancelled = (enrollmentId: string) => {
+    if (!confirm('Annuler ce paiement ?')) return;
+    updatePaymentStatus(enrollmentId, 'cancelled', false);
+  };
+
   const handleExport = () => {
-    if (!selectedParent || monthlyPayments.length === 0) return;
+    if (!selectedParent || enrollments.length === 0) return;
 
     const parent = parents.find(p => p.id === selectedParent);
-    const dataToExport = monthlyPayments.map(mp => ({
-      mois: mp.month,
-      montant: mp.amount,
-      statut: mp.isPaid ? 'Payé' : 'Non payé',
-      date_validation: mp.validatedAt ? new Date(mp.validatedAt).toLocaleDateString('fr-FR') : '',
+    const dataToExport = enrollments.map(e => ({
+      mois: formatMonth(e.enrollment_month),
+      enfant: e.child?.full_name || 'N/A',
+      centre: e.activity?.center?.name || 'N/A',
+      activite: e.activity?.name || 'N/A',
+      montant: e.total_amount,
+      statut_inscription: e.status,
+      statut_paiement: e.payment_status,
+      date_paiement: e.paid_at ? new Date(e.paid_at).toLocaleDateString('fr-FR') : '',
+      note: e.payment_note || ''
     }));
 
     exportToCSV(
@@ -201,17 +224,86 @@ export default function PaymentsPage() {
     );
   };
 
-  const totalPaid = monthlyPayments.filter(m => m.isPaid).reduce((sum, m) => sum + m.amount, 0);
-  const totalPending = monthlyPayments.filter(m => !m.isPaid && m.amount > 0).reduce((sum, m) => sum + m.amount, 0);
+  const formatMonth = (monthStr: string) => {
+    if (!monthStr) return 'N/A';
+    const [year, month] = monthStr.split('-');
+    const monthIndex = parseInt(month, 10) - 1;
+    return `${MONTHS_FR[monthIndex]} ${year}`;
+  };
+
+  const getPaymentBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return (
+          <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+            <CheckCircle className="w-3 h-3" />
+            <span>Payé</span>
+          </span>
+        );
+      case 'late':
+        return (
+          <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+            <AlertCircle className="w-3 h-3" />
+            <span>En retard</span>
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="inline-flex items-center space-x-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+            <Clock className="w-3 h-3" />
+            <span>En attente</span>
+          </span>
+        );
+      case 'cancelled':
+        return (
+          <span className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+            <XCircle className="w-3 h-3" />
+            <span>Annulé</span>
+          </span>
+        );
+      default:
+        return <span className="text-gray-400 text-xs">{status}</span>;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges: { [key: string]: { color: string; label: string } } = {
+      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
+      pending_admin_validation: { color: 'bg-yellow-100 text-yellow-800', label: 'En attente' },
+      cancelled: { color: 'bg-gray-100 text-gray-800', label: 'Annulée' },
+      rejected: { color: 'bg-red-100 text-red-800', label: 'Refusée' }
+    };
+
+    const badge = badges[status] || { color: 'bg-gray-100 text-gray-800', label: status };
+    return (
+      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+        {badge.label}
+      </span>
+    );
+  };
+
+  const totalPaid = enrollments
+    .filter(e => e.payment_status === 'paid')
+    .reduce((sum, e) => sum + (e.total_amount || 0), 0);
+
+  const totalPending = enrollments
+    .filter(e => ['pending', 'late'].includes(e.payment_status))
+    .reduce((sum, e) => sum + (e.total_amount || 0), 0);
+
+  const paidMonthsCount = new Set(
+    enrollments
+      .filter(e => e.payment_status === 'paid')
+      .map(e => e.enrollment_month)
+  ).size;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestion des Paiements</h1>
-          <p className="text-gray-600 mt-1">Validation manuelle des paiements mensuels</p>
+          <p className="text-gray-600 mt-1">Gestion par inscription et enfant</p>
         </div>
-        {selectedParent && (
+        {selectedParent && enrollments.length > 0 && (
           <button
             onClick={handleExport}
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
@@ -258,9 +350,9 @@ export default function PaymentsPage() {
         {selectedParent && (
           <>
             <div className="grid md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <DollarSign className="w-8 h-8 text-blue-600" />
+                  <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
                     <p className="text-sm text-gray-600">Total payé</p>
                     <p className="text-xl font-bold text-gray-900">
@@ -272,9 +364,9 @@ export default function PaymentsPage() {
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <Calendar className="w-8 h-8 text-yellow-600" />
+                  <Clock className="w-8 h-8 text-yellow-600" />
                   <div>
-                    <p className="text-sm text-gray-600">En attente</p>
+                    <p className="text-sm text-gray-600">En attente / Retard</p>
                     <p className="text-xl font-bold text-gray-900">
                       {totalPending.toLocaleString('fr-FR')} FCFA
                     </p>
@@ -282,13 +374,13 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+                  <Calendar className="w-8 h-8 text-blue-600" />
                   <div>
-                    <p className="text-sm text-gray-600">Mois payés</p>
+                    <p className="text-sm text-gray-600">Mois distincts payés</p>
                     <p className="text-xl font-bold text-gray-900">
-                      {monthlyPayments.filter(m => m.isPaid).length} / 12
+                      {paidMonthsCount}
                     </p>
                   </div>
                 </div>
@@ -302,75 +394,129 @@ export default function PaymentsPage() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Mois
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Enfant
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Centre / Activité
+                    </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Montant
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statut
+                      Statut inscription
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
+                      Statut paiement
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {loading ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                         Chargement...
                       </td>
                     </tr>
-                  ) : monthlyPayments.length === 0 ? (
+                  ) : enrollments.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                        Aucune donnée disponible
+                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                        Aucune inscription trouvée pour ce parent
                       </td>
                     </tr>
                   ) : (
-                    monthlyPayments.map((mp, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
+                    enrollments.map((enrollment) => (
+                      <tr key={enrollment.id} className="hover:bg-gray-50">
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
                             <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium text-gray-900">{mp.month}</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {formatMonth(enrollment.enrollment_month)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <User className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-900">
+                              {enrollment.child?.full_name || 'N/A'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="text-sm text-gray-900">
+                            {enrollment.activity?.center?.name || 'N/A'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {enrollment.activity?.name || 'N/A'}
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-right">
-                          <span className={`font-semibold ${mp.amount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
-                            {mp.amount.toLocaleString('fr-FR')} FCFA
+                          <span className="text-sm font-semibold text-gray-900">
+                            {(enrollment.total_amount || 0).toLocaleString('fr-FR')} FCFA
                           </span>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center">
-                          {mp.isPaid ? (
-                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                              <Check className="w-4 h-4" />
-                              <span>Payé</span>
-                            </span>
-                          ) : mp.amount > 0 ? (
-                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                              <X className="w-4 h-4" />
-                              <span>Non payé</span>
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 text-sm">Aucune inscription</span>
+                          {getStatusBadge(enrollment.status)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-center">
+                          {getPaymentBadge(enrollment.payment_status)}
+                          {enrollment.paid_at && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {new Date(enrollment.paid_at).toLocaleDateString('fr-FR')}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center">
-                          {!mp.isPaid && mp.amount > 0 && (
-                            <button
-                              onClick={() => handleValidatePayment(index)}
-                              disabled={processing}
-                              className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                              <Check className="w-4 h-4" />
-                              <span>Valider</span>
-                            </button>
-                          )}
-                          {mp.isPaid && (
-                            <span className="text-xs text-gray-500">
-                              {mp.validatedAt && new Date(mp.validatedAt).toLocaleDateString('fr-FR')}
-                            </span>
-                          )}
+                          <div className="flex items-center justify-center space-x-1">
+                            {enrollment.payment_status !== 'paid' && (
+                              <button
+                                onClick={() => handleMarkPaid(enrollment.id)}
+                                disabled={processing === enrollment.id}
+                                className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition disabled:opacity-50"
+                                title="Marquer payé"
+                              >
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Payer
+                              </button>
+                            )}
+                            {enrollment.payment_status !== 'late' && enrollment.payment_status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleMarkLate(enrollment.id)}
+                                disabled={processing === enrollment.id}
+                                className="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition disabled:opacity-50"
+                                title="Marquer en retard"
+                              >
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Retard
+                              </button>
+                            )}
+                            {enrollment.payment_status !== 'pending' && (
+                              <button
+                                onClick={() => handleMarkPending(enrollment.id)}
+                                disabled={processing === enrollment.id}
+                                className="inline-flex items-center px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition disabled:opacity-50"
+                                title="Remettre en attente"
+                              >
+                                <Clock className="w-3 h-3 mr-1" />
+                                Attente
+                              </button>
+                            )}
+                            {enrollment.payment_status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleMarkCancelled(enrollment.id)}
+                                disabled={processing === enrollment.id}
+                                className="inline-flex items-center px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition disabled:opacity-50"
+                                title="Annuler"
+                              >
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Annuler
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

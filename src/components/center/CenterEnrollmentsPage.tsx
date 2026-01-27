@@ -140,9 +140,13 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
   const getPaymentBadge = (paymentStatus: string) => {
     switch (paymentStatus) {
       case 'paid':
-        return <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-semibold">Payé</span>;
+        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">Payé</span>;
+      case 'late':
+        return <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">En retard</span>;
       case 'pending':
-        return <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold">En attente</span>;
+        return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">En attente</span>;
+      case 'cancelled':
+        return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold">Annulé</span>;
       default:
         return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold">{paymentStatus}</span>;
     }
@@ -211,6 +215,8 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
               <option value="">Tous</option>
               <option value="paid">Payé</option>
               <option value="pending">En attente</option>
+              <option value="late">En retard</option>
+              <option value="cancelled">Annulé</option>
             </select>
           </div>
         </div>

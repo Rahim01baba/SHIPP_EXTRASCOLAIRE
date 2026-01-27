@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { LogOut, Users, Calendar, CreditCard, FileText, Bell, Plus, Edit, Trash2, Phone, Shield, CheckCircle, XCircle, Ban, AlertCircle } from 'lucide-react';
+import { LogOut, Users, Calendar, CreditCard, FileText, Bell, Plus, Edit, Trash2, Phone, Shield, CheckCircle, XCircle, Ban, AlertCircle, Clock } from 'lucide-react';
 import AddChildModal from '../../components/parent/AddChildModal';
 import EditChildModal from '../../components/parent/EditChildModal';
 import NewEnrollmentModal from '../../components/parent/NewEnrollmentModal';
@@ -742,13 +742,27 @@ export default function ParentDashboard() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            enrollment.payment_status === 'completed'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {enrollment.payment_status === 'completed' ? 'Payé' : 'En attente'}
-                          </span>
+                          {enrollment.payment_status === 'paid' ? (
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                              <CheckCircle className="w-3 h-3" />
+                              <span>Payé</span>
+                            </span>
+                          ) : enrollment.payment_status === 'late' ? (
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                              <AlertCircle className="w-3 h-3" />
+                              <span>En retard</span>
+                            </span>
+                          ) : enrollment.payment_status === 'cancelled' ? (
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                              <XCircle className="w-3 h-3" />
+                              <span>Annulé</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                              <Clock className="w-3 h-3" />
+                              <span>En attente</span>
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           {enrollment.status === 'cancelled' ? (

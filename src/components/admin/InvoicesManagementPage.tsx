@@ -283,10 +283,22 @@ export default function InvoicesManagementPage() {
 
     try {
       console.log('[INVOICES] Validating payment for enrollment:', selectedEnrollment);
-      const { error: updateError } = await supabase
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Utilisateur non connecté');
+        return;
+      }
+
+      const { data, error: updateError } = await supabase
         .from('enrollments')
-        .update({ payment_status: 'completed' })
-        .eq('id', selectedEnrollment);
+        .update({
+          payment_status: 'paid',
+          paid_at: new Date().toISOString(),
+          payment_marked_by: profile?.id
+        })
+        .eq('id', selectedEnrollment)
+        .select('id, payment_status');
 
       if (updateError) {
         console.error('[INVOICES] Error validating payment:', updateError);
@@ -294,8 +306,13 @@ export default function InvoicesManagementPage() {
         return;
       }
 
+      if (!data || data.length === 0) {
+        setError('Aucune inscription mise à jour. Vérifiez les permissions RLS.');
+        return;
+      }
+
       console.log('[INVOICES] Payment validated successfully');
-      setEnrollmentDetails({ ...enrollmentDetails, payment_status: 'completed' });
+      setEnrollmentDetails({ ...enrollmentDetails, payment_status: 'paid' });
       setSuccess('Paiement validé avec succès');
 
       await loadEnrollments(selectedParent, selectedChild, selectedMonth);
@@ -688,9 +705,21 @@ export default function InvoicesManagementPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Statut paiement:</span>
                     <span className={`font-medium ${
-                      enrollmentDetails.payment_status === 'completed' ? 'text-green-600' : 'text-orange-600'
+                      enrollmentDetails.payment_status === 'paid'
+                        ? 'text-green-600'
+                        : enrollmentDetails.payment_status === 'late'
+                        ? 'text-red-600'
+                        : enrollmentDetails.payment_status === 'cancelled'
+                        ? 'text-gray-600'
+                        : 'text-yellow-600'
                     }`}>
-                      {enrollmentDetails.payment_status === 'completed' ? 'Payé' : 'En attente'}
+                      {enrollmentDetails.payment_status === 'paid'
+                        ? 'Payé'
+                        : enrollmentDetails.payment_status === 'late'
+                        ? 'En retard'
+                        : enrollmentDetails.payment_status === 'cancelled'
+                        ? 'Annulé'
+                        : 'En attente'}
                     </span>
                   </div>
                 </div>
@@ -709,7 +738,7 @@ export default function InvoicesManagementPage() {
               <div className="bg-white rounded-xl p-6 shadow-sm space-y-3">
                 <h3 className="font-semibold mb-4">Actions</h3>
 
-                {enrollmentDetails.payment_status !== 'completed' && (
+                {enrollmentDetails.payment_status !== 'paid' && (
                   <button
                     onClick={validatePayment}
                     disabled={processing}
