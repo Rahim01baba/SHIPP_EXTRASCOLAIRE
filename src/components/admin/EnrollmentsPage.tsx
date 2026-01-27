@@ -294,19 +294,22 @@ export default function EnrollmentsPage() {
     if (!reason || !reason.trim()) return;
 
     setProcessing(enrollmentId);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('enrollments')
       .update({
         status: 'rejected',
         rejection_reason: reason.trim()
       })
-      .eq('id', enrollmentId);
+      .eq('id', enrollmentId)
+      .select();
 
     if (error) {
       alert(`Erreur: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      alert('Aucune inscription mise à jour. Vérifiez les permissions RLS ou le filtre.');
     } else {
       alert('Inscription refusée');
-      loadEnrollments();
+      await loadEnrollments();
     }
     setProcessing(null);
   };

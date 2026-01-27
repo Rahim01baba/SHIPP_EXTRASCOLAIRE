@@ -347,18 +347,26 @@ export default function ParentDashboard() {
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('enrollments')
       .update({ status: 'cancelled' })
-      .eq('id', enrollmentId);
+      .eq('id', enrollmentId)
+      .select('id');
 
     if (error) {
-      console.error('Erreur annulation inscription:', error);
-      alert('Erreur lors de l\'annulation de l\'inscription');
+      console.error('[PARENT] Erreur annulation inscription:', error);
+      alert(`Erreur lors de l'annulation : ${error.message}`);
       return;
     }
 
-    loadEnrollments();
+    if (!data || data.length === 0) {
+      console.warn('[PARENT] Cancellation failed: no rows affected');
+      alert('Impossible d\'annuler : inscription non trouvée ou déjà annulée.');
+      return;
+    }
+
+    console.log('[PARENT] Cancellation successful:', data[0].id);
+    await loadEnrollments();
   };
 
   const deleteEnrollment = async (enrollmentId: string) => {
@@ -371,21 +379,23 @@ export default function ParentDashboard() {
       .update({ is_deleted: true })
       .eq('id', enrollmentId)
       .eq('status', 'cancelled')
-      .select();
+      .select('id');
 
     if (error) {
-      console.error('Erreur suppression inscription:', error);
-      alert('Erreur lors de la suppression de l\'inscription');
+      console.error('[PARENT] Erreur suppression inscription:', error);
+      alert(`Erreur lors de la suppression : ${error.message}`);
       return;
     }
 
     if (!data || data.length === 0) {
-      alert('Impossible de supprimer : inscription non trouvée ou non annulée');
+      console.warn('[PARENT] Soft delete failed: no rows affected');
+      alert('Impossible de supprimer : seules les inscriptions annulées peuvent être supprimées.');
       return;
     }
 
+    console.log('[PARENT] Soft delete successful:', data[0].id);
     alert('Inscription supprimée avec succès');
-    loadEnrollments();
+    await loadEnrollments();
   };
 
   const tabs = [
