@@ -284,52 +284,12 @@ export default function CenterSignup() {
     }
   };
 
-  const ensureBucketExists = async (bucketName: string): Promise<boolean> => {
-    try {
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-
-      if (listError) {
-        console.error(`[CenterSignup] Error listing buckets:`, listError);
-        return false;
-      }
-
-      const bucketExists = buckets?.some(b => b.name === bucketName);
-
-      if (!bucketExists) {
-        console.log(`[CenterSignup] Bucket ${bucketName} not found, creating...`);
-        const { error: createError } = await supabase.storage.createBucket(bucketName, {
-          public: true,
-        });
-
-        if (createError) {
-          console.error(`[CenterSignup] Error creating bucket:`, createError);
-          return false;
-        }
-
-        console.log(`[CenterSignup] Bucket ${bucketName} created successfully`);
-      }
-
-      return true;
-    } catch (err) {
-      console.error(`[CenterSignup] Exception checking bucket:`, err);
-      return false;
-    }
-  };
-
   const uploadLogo = async (centerId: string): Promise<string | null> => {
     if (!logoFile) return null;
 
     try {
-      console.log('[CenterSignup] Checking bucket existence...');
-      const bucketReady = await ensureBucketExists('center-logos');
-
-      if (!bucketReady) {
-        console.error('[CenterSignup] Bucket not ready');
-        return null;
-      }
-
       const fileExt = logoFile.name.split('.').pop();
-      const fileName = `${centerId}_${Date.now()}.${fileExt}`;
+      const fileName = `${centerId}/${Date.now()}.${fileExt}`;
 
       console.log('[CenterSignup] Uploading logo:', fileName);
 

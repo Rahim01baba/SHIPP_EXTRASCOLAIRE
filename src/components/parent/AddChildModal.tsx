@@ -42,55 +42,14 @@ export default function AddChildModal({ onClose, onSuccess }: AddChildModalProps
     setError('');
   };
 
-  const ensureBucketExists = async (bucketName: string): Promise<boolean> => {
-    try {
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-
-      if (listError) {
-        console.error(`[AddChild] Error listing buckets:`, listError);
-        return false;
-      }
-
-      const bucketExists = buckets?.some(b => b.name === bucketName);
-
-      if (!bucketExists) {
-        console.log(`[AddChild] Bucket ${bucketName} not found, creating...`);
-        const { error: createError } = await supabase.storage.createBucket(bucketName, {
-          public: true,
-        });
-
-        if (createError) {
-          console.error(`[AddChild] Error creating bucket:`, createError);
-          return false;
-        }
-
-        console.log(`[AddChild] Bucket ${bucketName} created successfully`);
-      }
-
-      return true;
-    } catch (err) {
-      console.error(`[AddChild] Exception checking bucket:`, err);
-      return false;
-    }
-  };
-
   const uploadPhoto = async (childId: string, userId: string): Promise<string | null> => {
     if (!photoFile) return null;
 
     try {
       setUploadingPhoto(true);
 
-      console.log('[AddChild] Checking bucket existence...');
-      const bucketReady = await ensureBucketExists('children-photos');
-
-      if (!bucketReady) {
-        console.error('[AddChild] Bucket not ready');
-        setError('Erreur: bucket de stockage non disponible');
-        return null;
-      }
-
       const fileExt = photoFile.name.split('.').pop();
-      const filePath = `${childId}/${childId}.${fileExt}`;
+      const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
       console.log('[AddChild] Uploading photo:', filePath);
 

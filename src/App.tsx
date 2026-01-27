@@ -4,20 +4,11 @@ import LandingPage from './pages/public/LandingPage';
 import ParentDashboard from './pages/parent/ParentDashboard';
 import CenterDashboard from './pages/center/CenterDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import TokenAccess from './components/auth/TokenAccess';
 
 const isDev = import.meta.env.DEV;
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get('token');
-
-  if (token && isDev) {
-    if (isDev) console.log('[App] Token detected in URL');
-    return <TokenAccess token={token} />;
-  }
 
   if (isDev) {
     console.log('[App] Render:', { loading, hasUser: !!user, hasProfile: !!profile, role: profile?.role });
