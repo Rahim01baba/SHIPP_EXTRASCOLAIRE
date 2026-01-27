@@ -78,7 +78,8 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
         activities(name)
       `)
       .eq('center_id', center.id)
-      .in('status', ['active', 'confirmed'])
+      .eq('status', 'active')
+      .eq('is_deleted', false)
       .gte('enrollment_month', monthStart)
       .lte('enrollment_month', monthEnd)
       .order('created_at', { ascending: false });
@@ -91,7 +92,11 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
       query = query.eq('payment_status', paymentFilter);
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[CENTER ENROLLMENTS] Error loading enrollments:', error);
+    }
 
     if (data) setEnrollments(data);
     setLoading(false);

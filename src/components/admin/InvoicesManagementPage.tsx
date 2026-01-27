@@ -432,8 +432,8 @@ export default function InvoicesManagementPage() {
   };
 
   const markInvoiceSent = async () => {
-    if (!selectedEnrollment) {
-      setError('Veuillez sélectionner une inscription');
+    if (!selectedEnrollment || !enrollmentDetails || !parentDetails) {
+      setError('Veuillez sélectionner une inscription complète');
       return;
     }
 
@@ -443,23 +443,51 @@ export default function InvoicesManagementPage() {
 
     try {
       console.log('[INVOICES] Marking invoice as sent for enrollment:', selectedEnrollment);
-      const { error: updateError } = await supabase
-        .from('invoices')
-        .update({
-          invoice_sent: true,
-          sent_at: new Date().toISOString(),
-          sent_by: profile?.id,
-        })
-        .eq('enrollment_id', selectedEnrollment);
 
-      if (updateError) {
-        console.error('[INVOICES] Error marking invoice as sent:', updateError);
-        setError(`Erreur: ${updateError.message}`);
+      const invoiceNumber = `INV-${Date.now()}`;
+      const invoiceDate = enrollmentDetails.enrollment_month;
+
+      const invoiceData = {
+        parent_id: selectedParent,
+        child_id: selectedChild,
+        enrollment_id: selectedEnrollment,
+        invoice_number: invoiceNumber,
+        invoice_date: invoiceDate,
+        child_name: enrollmentDetails.child_name,
+        activity_name: enrollmentDetails.activity_name,
+        center_name: enrollmentDetails.center_name,
+        course_price: enrollmentDetails.course_amount,
+        transport_price: enrollmentDetails.transport_amount,
+        total_amount: enrollmentDetails.total_amount,
+        invoice_sent: true,
+        sent_at: new Date().toISOString(),
+        sent_by: profile?.id,
+      };
+
+      const { data, error: upsertError, count } = await supabase
+        .from('invoices')
+        .upsert(invoiceData, {
+          onConflict: 'enrollment_id, invoice_date',
+          count: 'exact'
+        })
+        .select();
+
+      if (upsertError) {
+        console.error('[INVOICES] Error upserting invoice:', upsertError);
+        setError(`Erreur: ${upsertError.message}`);
         return;
       }
 
-      console.log('[INVOICES] Invoice marked as sent');
-      setSuccess('Facture marquée comme envoyée');
+      if (!data || data.length === 0) {
+        console.warn('[INVOICES] UPSERT returned no data');
+        setError('Aucune facture créée ou mise à jour (vérifier les permissions RLS)');
+        return;
+      }
+
+      console.log('[INVOICES] Invoice marked as sent (upserted):', data[0].id);
+      setSuccess('Facture marquée comme envoyée avec succès');
+
+      await loadEnrollments(selectedParent, selectedChild, selectedMonth);
     } catch (err) {
       console.error('[INVOICES] Exception:', err);
       setError('Une erreur inattendue est survenue');

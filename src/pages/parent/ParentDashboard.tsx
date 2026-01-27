@@ -318,6 +318,7 @@ export default function ParentDashboard() {
         )
       `)
       .eq('parent_id', user.id)
+      .eq('is_deleted', false)
       .order('enrollment_month', { ascending: false });
 
     if (error) {
@@ -357,6 +358,33 @@ export default function ParentDashboard() {
       return;
     }
 
+    loadEnrollments();
+  };
+
+  const deleteEnrollment = async (enrollmentId: string) => {
+    if (!confirm('Supprimer définitivement cette inscription annulée ? Cette action est irréversible.')) {
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('enrollments')
+      .update({ is_deleted: true })
+      .eq('id', enrollmentId)
+      .eq('status', 'cancelled')
+      .select();
+
+    if (error) {
+      console.error('Erreur suppression inscription:', error);
+      alert('Erreur lors de la suppression de l\'inscription');
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      alert('Impossible de supprimer : inscription non trouvée ou non annulée');
+      return;
+    }
+
+    alert('Inscription supprimée avec succès');
     loadEnrollments();
   };
 
@@ -713,7 +741,16 @@ export default function ParentDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {enrollment.status !== 'cancelled' && (
+                          {enrollment.status === 'cancelled' ? (
+                            <button
+                              onClick={() => deleteEnrollment(enrollment.id)}
+                              className="inline-flex items-center space-x-1 px-3 py-1 text-gray-600 hover:bg-gray-50 rounded transition text-sm"
+                              title="Supprimer définitivement"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Supprimer</span>
+                            </button>
+                          ) : enrollment.status !== 'rejected' && (
                             <button
                               onClick={() => cancelEnrollment(enrollment.id)}
                               className="inline-flex items-center space-x-1 px-3 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm"

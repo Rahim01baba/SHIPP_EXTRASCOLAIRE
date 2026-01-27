@@ -255,26 +255,36 @@ export default function EnrollmentsPage() {
   };
 
   const handleApprove = async (enrollmentId: string) => {
+    const enrollment = enrollments.find(e => e.id === enrollmentId);
+
+    if (!enrollment?.activity_id) {
+      alert('Erreur: Inscription invalide - activité manquante. Impossible de valider.');
+      return;
+    }
+
     if (!confirm('Valider cette inscription ? Le parent et le centre seront notifiés.')) return;
 
     setProcessing(enrollmentId);
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { error } = await supabase
+    const { data, error, count } = await supabase
       .from('enrollments')
       .update({
         status: 'active',
         validated_at: new Date().toISOString(),
         validated_by: user?.id
       })
-      .eq('id', enrollmentId);
+      .eq('id', enrollmentId)
+      .select();
 
     if (error) {
-      alert(`Erreur: ${error.message}`);
+      alert(`Erreur lors de la validation: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      alert('Aucune inscription mise à jour. Vérifiez les permissions RLS ou le filtre.');
     } else {
       alert('Inscription validée avec succès');
-      loadEnrollments();
+      await loadEnrollments();
     }
     setProcessing(null);
   };
