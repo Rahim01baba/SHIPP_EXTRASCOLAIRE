@@ -131,20 +131,9 @@ export default function PaymentsPage() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) {
-        setError('Profil non trouvé');
-        return;
-      }
-
       const updateData: any = {
         payment_status: newStatus,
-        payment_marked_by: profile.id,
+        payment_marked_by: user.id,
         paid_at: shouldSetPaidAt ? new Date().toISOString() : null
       };
 
@@ -161,7 +150,7 @@ export default function PaymentsPage() {
       }
 
       if (!data || data.length === 0) {
-        setError('Aucune inscription mise à jour. Vérifiez les permissions RLS.');
+        setError('Aucune inscription mise à jour (0 ligne affectée). Vérifiez les permissions RLS ou le statut de l\'inscription.');
         return;
       }
 
@@ -284,16 +273,16 @@ export default function PaymentsPage() {
   };
 
   const totalPaid = enrollments
-    .filter(e => e.payment_status === 'paid')
+    .filter(e => e.payment_status === 'paid' && e.status !== 'cancelled')
     .reduce((sum, e) => sum + (e.total_amount || 0), 0);
 
   const totalPending = enrollments
-    .filter(e => ['pending', 'late'].includes(e.payment_status))
+    .filter(e => ['pending', 'late'].includes(e.payment_status) && e.status !== 'cancelled')
     .reduce((sum, e) => sum + (e.total_amount || 0), 0);
 
   const paidMonthsCount = new Set(
     enrollments
-      .filter(e => e.payment_status === 'paid')
+      .filter(e => e.payment_status === 'paid' && e.status !== 'cancelled')
       .map(e => e.enrollment_month)
   ).size;
 
@@ -429,98 +418,106 @@ export default function PaymentsPage() {
                       </td>
                     </tr>
                   ) : (
-                    enrollments.map((enrollment) => (
-                      <tr key={enrollment.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-900">
-                              {formatMonth(enrollment.enrollment_month)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <User className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-900">
-                              {enrollment.child ? `${enrollment.child.first_name} ${enrollment.child.last_name}` : 'N/A'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="text-sm text-gray-900">
-                            {enrollment.activity?.center?.name || 'N/A'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {enrollment.activity?.name || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-right">
-                          <span className="text-sm font-semibold text-gray-900">
-                            {(enrollment.total_amount || 0).toLocaleString('fr-FR')} FCFA
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          {getStatusBadge(enrollment.status)}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          {getPaymentBadge(enrollment.payment_status)}
-                          {enrollment.paid_at && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(enrollment.paid_at).toLocaleDateString('fr-FR')}
+                    enrollments.map((enrollment) => {
+                      const isCancelled = enrollment.status === 'cancelled';
+                      return (
+                        <tr key={enrollment.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm font-medium text-gray-900">
+                                {formatMonth(enrollment.enrollment_month)}
+                              </span>
                             </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center space-x-1">
-                            {enrollment.payment_status !== 'paid' && (
-                              <button
-                                onClick={() => handleMarkPaid(enrollment.id)}
-                                disabled={processing === enrollment.id}
-                                className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition disabled:opacity-50"
-                                title="Marquer payé"
-                              >
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Payer
-                              </button>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-900">
+                                {enrollment.child ? `${enrollment.child.first_name} ${enrollment.child.last_name}` : 'N/A'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="text-sm text-gray-900">
+                              {enrollment.activity?.center?.name || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {enrollment.activity?.name || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {(enrollment.total_amount || 0).toLocaleString('fr-FR')} FCFA
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            {getStatusBadge(enrollment.status)}
+                            {isCancelled && (
+                              <div className="text-xs text-red-600 mt-1 font-medium">
+                                Paiement bloqué
+                              </div>
                             )}
-                            {enrollment.payment_status !== 'late' && enrollment.payment_status !== 'cancelled' && (
-                              <button
-                                onClick={() => handleMarkLate(enrollment.id)}
-                                disabled={processing === enrollment.id}
-                                className="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition disabled:opacity-50"
-                                title="Marquer en retard"
-                              >
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Retard
-                              </button>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            {getPaymentBadge(enrollment.payment_status)}
+                            {enrollment.paid_at && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {new Date(enrollment.paid_at).toLocaleDateString('fr-FR')}
+                              </div>
                             )}
-                            {enrollment.payment_status !== 'pending' && (
-                              <button
-                                onClick={() => handleMarkPending(enrollment.id)}
-                                disabled={processing === enrollment.id}
-                                className="inline-flex items-center px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition disabled:opacity-50"
-                                title="Remettre en attente"
-                              >
-                                <Clock className="w-3 h-3 mr-1" />
-                                Attente
-                              </button>
-                            )}
-                            {enrollment.payment_status !== 'cancelled' && (
-                              <button
-                                onClick={() => handleMarkCancelled(enrollment.id)}
-                                disabled={processing === enrollment.id}
-                                className="inline-flex items-center px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition disabled:opacity-50"
-                                title="Annuler"
-                              >
-                                <XCircle className="w-3 h-3 mr-1" />
-                                Annuler
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              {enrollment.payment_status !== 'paid' && (
+                                <button
+                                  onClick={() => handleMarkPaid(enrollment.id)}
+                                  disabled={processing === enrollment.id || isCancelled}
+                                  className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={isCancelled ? "Inscription annulée - paiement bloqué" : "Marquer payé"}
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Payer
+                                </button>
+                              )}
+                              {enrollment.payment_status !== 'late' && enrollment.payment_status !== 'cancelled' && (
+                                <button
+                                  onClick={() => handleMarkLate(enrollment.id)}
+                                  disabled={processing === enrollment.id || isCancelled}
+                                  className="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={isCancelled ? "Inscription annulée - paiement bloqué" : "Marquer en retard"}
+                                >
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Retard
+                                </button>
+                              )}
+                              {enrollment.payment_status !== 'pending' && !isCancelled && (
+                                <button
+                                  onClick={() => handleMarkPending(enrollment.id)}
+                                  disabled={processing === enrollment.id}
+                                  className="inline-flex items-center px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition disabled:opacity-50"
+                                  title="Remettre en attente"
+                                >
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Attente
+                                </button>
+                              )}
+                              {enrollment.payment_status !== 'cancelled' && !isCancelled && (
+                                <button
+                                  onClick={() => handleMarkCancelled(enrollment.id)}
+                                  disabled={processing === enrollment.id}
+                                  className="inline-flex items-center px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition disabled:opacity-50"
+                                  title="Annuler"
+                                >
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Annuler
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
