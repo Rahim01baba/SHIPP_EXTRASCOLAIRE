@@ -13,7 +13,7 @@ interface Enrollment {
   enrollment_month: string;
   status: string;
   payment_status: string;
-  amount_total: number;
+  total_amount: number;
   created_at: string;
   children: {
     full_name: string;
@@ -297,7 +297,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
-                        {enrollment.amount_total?.toLocaleString('fr-FR') || 0} F
+                        {enrollment.total_amount?.toLocaleString('fr-FR') || 0} F
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -20,9 +20,9 @@ interface Enrollment {
   id: string;
   child_id: string;
   activity_id: string;
-  course_price: number;
-  transport_price: number;
-  total_price: number;
+  course_amount: number;
+  transport_amount: number;
+  total_amount: number;
   activity: {
     name: string;
     center: {
@@ -138,7 +138,7 @@ export default function ParentDetailsModal({ parentId, onClose }: ParentDetailsM
         return {
           month,
           monthIndex: index,
-          amount: enrollment.total_price,
+          amount: enrollment.total_amount,
           paid: payment?.status === 'completed',
           paymentId: payment?.id,
           invoiceSent: invoice?.invoice_sent || false,
@@ -171,7 +171,7 @@ export default function ParentDetailsModal({ parentId, onClose }: ParentDetailsM
           enrollment_id: enrollment.id,
           parent_id: parentId,
           amount: monthData.amount,
-          payment_method: 'manual',
+          payment_method: 'cash',
           payment_reference: `PAY-${Date.now()}`,
           status: 'completed',
           paid_at: new Date().toISOString(),
@@ -200,8 +200,8 @@ export default function ParentDetailsModal({ parentId, onClose }: ParentDetailsM
           child_name: `${enrollment.child.first_name} ${enrollment.child.last_name}`,
           activity_name: enrollment.activity.name,
           center_name: enrollment.activity.center.name,
-          course_price: enrollment.course_price,
-          transport_price: enrollment.transport_price,
+          course_price: enrollment.course_amount,
+          transport_price: enrollment.transport_amount,
           total_amount: monthData.amount,
           invoice_sent: false,
         })
@@ -221,8 +221,8 @@ export default function ParentDetailsModal({ parentId, onClose }: ParentDetailsM
         childName: `${enrollment.child.first_name} ${enrollment.child.last_name}`,
         centerName: enrollment.activity.center.name,
         activityName: enrollment.activity.name,
-        coursePrice: enrollment.course_price,
-        transportPrice: enrollment.transport_price,
+        coursePrice: enrollment.course_amount,
+        transportPrice: enrollment.transport_amount,
         totalAmount: monthData.amount,
       });
 

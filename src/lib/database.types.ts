@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type UserRole = 'parent' | 'center' | 'admin';
-export type EnrollmentStatus = 'pending' | 'confirmed' | 'cancelled';
+export type EnrollmentStatus = 'pending_admin_validation' | 'active' | 'rejected' | 'cancelled';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 export type PaymentMethod = 'mobile_money' | 'bank_transfer' | 'cash';
 export type RouteStatus = 'planned' | 'confirmed' | 'cancelled' | 'completed';
@@ -292,11 +292,16 @@ export interface Database {
           child_id: string;
           activity_id: string;
           parent_id: string;
+          center_id: string | null;
           enrollment_month: string;
           status: EnrollmentStatus;
-          course_price: number;
-          transport_price: number;
-          total_price: number;
+          payment_status: string;
+          course_amount: number;
+          transport_amount: number;
+          total_amount: number;
+          rejection_reason: string | null;
+          validated_by: string | null;
+          validated_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -305,11 +310,16 @@ export interface Database {
           child_id: string;
           activity_id: string;
           parent_id: string;
+          center_id?: string | null;
           enrollment_month: string;
           status?: EnrollmentStatus;
-          course_price: number;
-          transport_price: number;
-          total_price: number;
+          payment_status?: string;
+          course_amount: number;
+          transport_amount: number;
+          total_amount: number;
+          rejection_reason?: string | null;
+          validated_by?: string | null;
+          validated_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -318,11 +328,16 @@ export interface Database {
           child_id?: string;
           activity_id?: string;
           parent_id?: string;
+          center_id?: string | null;
           enrollment_month?: string;
           status?: EnrollmentStatus;
-          course_price?: number;
-          transport_price?: number;
-          total_price?: number;
+          payment_status?: string;
+          course_amount?: number;
+          transport_amount?: number;
+          total_amount?: number;
+          rejection_reason?: string | null;
+          validated_by?: string | null;
+          validated_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
