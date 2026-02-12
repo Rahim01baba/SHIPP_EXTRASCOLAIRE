@@ -112,7 +112,7 @@ function InvoicesView() {
 
         return {
           month,
-          paid: payment?.status === 'completed',
+          paid: payment?.status === 'paid',
           invoiceSent: invoice?.invoice_sent || false,
           amount: enrollment.total_amount,
         };

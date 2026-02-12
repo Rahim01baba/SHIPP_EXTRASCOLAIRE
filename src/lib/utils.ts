@@ -78,9 +78,9 @@ export function getActivityTypeLabel(type: string): string {
 export function getStatusLabel(status: string): { label: string; color: string } {
   const statuses: Record<string, { label: string; color: string }> = {
     pending: { label: 'En attente', color: 'yellow' },
+    paid: { label: 'Payé', color: 'green' },
     confirmed: { label: 'Confirmée', color: 'green' },
     cancelled: { label: 'Annulée', color: 'red' },
-    completed: { label: 'Complétée', color: 'blue' },
     failed: { label: 'Échouée', color: 'red' },
     refunded: { label: 'Remboursée', color: 'orange' },
   };

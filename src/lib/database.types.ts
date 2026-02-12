@@ -8,7 +8,7 @@ export type Json =
 
 export type UserRole = 'parent' | 'center' | 'admin';
 export type EnrollmentStatus = 'pending_admin_validation' | 'active' | 'rejected' | 'cancelled';
-export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PaymentMethod = 'mobile_money' | 'bank_transfer' | 'cash';
 export type RouteStatus = 'planned' | 'confirmed' | 'cancelled' | 'completed';
 export type NotificationType = 'enrollment' | 'payment' | 'route' | 'general';

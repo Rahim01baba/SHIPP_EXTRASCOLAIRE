@@ -199,6 +199,111 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
     }
   };
 
+  const calculateAge = (birthDate: string): number => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age;
+  };
+
+  const validateBeforeEnrollment = async () => {
+    const enrollmentDate = `${selectedMonth}-01`;
+
+    const { data: center, error: centerError } = await supabase
+      .from('centers')
+      .select('validation_status, is_active, name')
+      .eq('id', selectedCenter)
+      .maybeSingle();
+
+    if (centerError) {
+      throw new Error('Erreur lors de la vérification du centre');
+    }
+
+    if (!center) {
+      throw new Error('Centre introuvable');
+    }
+
+    if (center.validation_status !== 'validated') {
+      throw new Error(`Le centre "${center.name}" n'est pas encore validé par SHIPP`);
+    }
+
+    if (!center.is_active) {
+      throw new Error(`Le centre "${center.name}" est actuellement désactivé`);
+    }
+
+    const { data: existingEnrollment, error: dupError } = await supabase
+      .from('enrollments')
+      .select('id, status')
+      .eq('child_id', selectedChild)
+      .eq('activity_id', selectedActivity)
+      .eq('enrollment_month', enrollmentDate)
+      .not('status', 'in', '(cancelled,rejected)')
+      .maybeSingle();
+
+    if (existingEnrollment) {
+      throw new Error(
+        'Cet enfant est déjà inscrit à cette activité pour ce mois. ' +
+        `(Status: ${existingEnrollment.status})`
+      );
+    }
+
+    const { data: activity, error: activityError } = await supabase
+      .from('activities')
+      .select('max_participants, name, center_id, centers(age_min, age_max)')
+      .eq('id', selectedActivity)
+      .maybeSingle();
+
+    if (activityError || !activity) {
+      throw new Error('Erreur lors de la vérification de l\'activité');
+    }
+
+    if (activity.max_participants && activity.max_participants > 0) {
+      const { count } = await supabase
+        .from('enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('activity_id', selectedActivity)
+        .eq('enrollment_month', enrollmentDate)
+        .eq('status', 'active');
+
+      if (count && count >= activity.max_participants) {
+        throw new Error(
+          `L'activité "${activity.name}" est complète pour ce mois. ` +
+          `Capacité : ${activity.max_participants} places.`
+        );
+      }
+    }
+
+    const { data: child, error: childError } = await supabase
+      .from('children')
+      .select('birth_date, first_name')
+      .eq('id', selectedChild)
+      .maybeSingle();
+
+    if (childError || !child) {
+      throw new Error('Erreur lors de la vérification de l\'enfant');
+    }
+
+    const childAge = calculateAge(child.birth_date);
+    const centerData = activity.centers as any;
+
+    if (centerData && centerData.age_min && centerData.age_max) {
+      if (childAge < centerData.age_min || childAge > centerData.age_max) {
+        throw new Error(
+          `${child.first_name} (${childAge} ans) n'est pas dans la tranche d'âge ` +
+          `requise pour cette activité (${centerData.age_min}-${centerData.age_max} ans)`
+        );
+      }
+    }
+
+    console.log('[ENROLLMENT] All validations passed ✓');
+  };
+
   const handleSubmit = async () => {
     setError('');
     setLoading(true);
@@ -215,20 +320,9 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
         return;
       }
 
+      await validateBeforeEnrollment();
+
       const enrollmentDate = `${selectedMonth}-01`;
-
-      const { data: existingEnrollment } = await supabase
-        .from('enrollments')
-        .select('id')
-        .eq('child_id', selectedChild)
-        .eq('activity_id', selectedActivity)
-        .eq('enrollment_month', enrollmentDate)
-        .maybeSingle();
-
-      if (existingEnrollment) {
-        setError('Cet enfant est déjà inscrit à cette activité pour ce mois');
-        return;
-      }
 
       console.log('[NewEnrollment] Creating enrollment...');
       const { data: enrollmentData, error: insertError } = await supabase
@@ -290,7 +384,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
       onClose();
     } catch (err: any) {
       console.error('[NewEnrollment] Exception during enrollment:', err);
-      setError(`Une erreur inattendue est survenue: ${err.message || 'Erreur inconnue'}`);
+      setError(err.message || 'Une erreur inattendue est survenue');
     } finally {
       setLoading(false);
     }

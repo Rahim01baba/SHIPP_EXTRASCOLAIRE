@@ -98,7 +98,7 @@ export default function DistributionsPage() {
         const { data: payments } = await supabase
           .from('payments')
           .select('amount')
-          .eq('status', 'completed')
+          .eq('status', 'paid')
           .gte('paid_at', startDate)
           .lt('paid_at', endDate)
           .in('enrollment_id', enrollments.map(e => e.id));
