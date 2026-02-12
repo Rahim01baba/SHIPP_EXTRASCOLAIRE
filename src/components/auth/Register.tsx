@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, ArrowLeft } from 'lucide-react';
 import type { UserRole } from '../../lib/database.types';
 
 interface RegisterProps {
-  onToggle: () => void;
+  onToggle?: () => void;
 }
 
 export default function Register({ onToggle }: RegisterProps) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -53,7 +55,12 @@ export default function Register({ onToggle }: RegisterProps) {
       console.log('[Register] Signup successful!');
       setError('');
       alert('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
-      onToggle();
+
+      if (onToggle) {
+        onToggle();
+      } else {
+        navigate('/login');
+      }
     } catch (err: any) {
       console.error('[Register] Signup exception:', err);
       setError(`Erreur inattendue: ${err.message || 'Erreur inconnue'}`);
@@ -63,13 +70,22 @@ export default function Register({ onToggle }: RegisterProps) {
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        <div className="flex items-center justify-center mb-8">
-          <div className="bg-yellow-400 p-3 rounded-full">
-            <UserPlus className="w-6 h-6 text-black" />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="font-medium">Retour</span>
+      </Link>
+
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex items-center justify-center mb-8">
+            <div className="bg-yellow-400 p-3 rounded-full">
+              <UserPlus className="w-6 h-6 text-black" />
+            </div>
           </div>
-        </div>
 
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
           Créer un compte parent
@@ -169,16 +185,26 @@ export default function Register({ onToggle }: RegisterProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Déjà un compte ?{' '}
-            <button
-              onClick={onToggle}
-              className="text-yellow-600 hover:text-yellow-700 font-medium"
-            >
-              Se connecter
-            </button>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Déjà un compte ?{' '}
+              {onToggle ? (
+                <button
+                  onClick={onToggle}
+                  className="text-yellow-600 hover:text-yellow-700 font-medium"
+                >
+                  Se connecter
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-yellow-600 hover:text-yellow-700 font-medium"
+                >
+                  Se connecter
+                </Link>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>

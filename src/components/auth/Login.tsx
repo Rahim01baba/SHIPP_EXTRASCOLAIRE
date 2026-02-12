@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogIn } from 'lucide-react';
+import { LogIn, ArrowLeft } from 'lucide-react';
 
 interface LoginProps {
-  onToggle: () => void;
+  onToggle?: () => void;
 }
 
 export default function Login({ onToggle }: LoginProps) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,19 +24,29 @@ export default function Login({ onToggle }: LoginProps) {
 
     if (error) {
       setError(error.message);
+      setLoading(false);
+    } else {
+      navigate('/auth-redirect');
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        <div className="flex items-center justify-center mb-8">
-          <div className="bg-yellow-400 p-3 rounded-full">
-            <LogIn className="w-6 h-6 text-black" />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="font-medium">Retour</span>
+      </Link>
+
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex items-center justify-center mb-8">
+            <div className="bg-yellow-400 p-3 rounded-full">
+              <LogIn className="w-6 h-6 text-black" />
+            </div>
           </div>
-        </div>
 
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
           Connexion
@@ -89,16 +101,26 @@ export default function Login({ onToggle }: LoginProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Pas encore de compte ?{' '}
-            <button
-              onClick={onToggle}
-              className="text-yellow-600 hover:text-yellow-700 font-medium"
-            >
-              S'inscrire
-            </button>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Pas encore de compte ?{' '}
+              {onToggle ? (
+                <button
+                  onClick={onToggle}
+                  className="text-yellow-600 hover:text-yellow-700 font-medium"
+                >
+                  S'inscrire
+                </button>
+              ) : (
+                <Link
+                  to="/register"
+                  className="text-yellow-600 hover:text-yellow-700 font-medium"
+                >
+                  S'inscrire
+                </Link>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>

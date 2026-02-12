@@ -1,38 +1,35 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import LandingPage from './pages/public/LandingPage';
+import CenterSignup from './pages/public/CenterSignup';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
 import ParentDashboard from './pages/parent/ParentDashboard';
 import CenterDashboard from './pages/center/CenterDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 const isDev = import.meta.env.DEV;
 
-function AppContent() {
+function AuthRedirect() {
   const { user, profile, loading } = useAuth();
 
-  if (isDev) {
-    console.log('[App] Render:', { loading, hasUser: !!user, hasProfile: !!profile, role: profile?.role });
-  }
-
   if (loading) {
-    if (isDev) console.log('[App] Showing loading screen');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
-        </div>
+        <LoadingSpinner />
       </div>
     );
   }
 
   if (!user) {
-    if (isDev) console.log('[App] No user, showing landing page');
-    return <LandingPage />;
+    return <Navigate to="/" replace />;
   }
 
   if (!profile) {
-    if (isDev) console.error('[App] User authenticated but no profile found');
+    if (isDev) console.error('[AuthRedirect] User authenticated but no profile found');
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
@@ -56,17 +53,15 @@ function AppContent() {
     );
   }
 
-  if (isDev) console.log('[App] Routing to dashboard:', profile.role);
-
   switch (profile.role) {
     case 'parent':
-      return <ParentDashboard />;
+      return <Navigate to="/parent/dashboard" replace />;
     case 'center':
-      return <CenterDashboard />;
+      return <Navigate to="/center/dashboard" replace />;
     case 'admin':
-      return <AdminDashboard />;
+      return <Navigate to="/admin/dashboard" replace />;
     default:
-      if (isDev) console.error('[App] Unknown role:', profile.role);
+      if (isDev) console.error('[AuthRedirect] Unknown role:', profile.role);
       return (
         <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
@@ -95,7 +90,44 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/signup/center" element={<CenterSignup />} />
+          <Route path="/auth-redirect" element={<AuthRedirect />} />
+
+          <Route
+            path="/parent/*"
+            element={
+              <ProtectedRoute allowedRoles={['parent']}>
+                <ParentDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/center/*"
+            element={
+              <ProtectedRoute allowedRoles={['center']}>
+                <CenterDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

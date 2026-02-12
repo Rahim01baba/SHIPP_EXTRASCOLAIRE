@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bus, Clock, Shield, Phone, Mail, HelpCircle, Building2, ChevronRight } from 'lucide-react';
-import Login from '../../components/auth/Login';
-import Register from '../../components/auth/Register';
-import CenterSignup from './CenterSignup';
 import { supabase } from '../../lib/supabase';
 
 interface Center {
@@ -12,9 +10,7 @@ interface Center {
 }
 
 export default function LandingPage() {
-  const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [showCenterForm, setShowCenterForm] = useState(false);
+  const navigate = useNavigate();
   const [validatedCenters, setValidatedCenters] = useState<Center[]>([]);
 
   const whatsappNumber = '2250101723687';
@@ -35,46 +31,6 @@ export default function LandingPage() {
     if (data) setValidatedCenters(data);
   };
 
-  const toggleAuthMode = () => {
-    setAuthMode(authMode === 'login' ? 'register' : 'login');
-  };
-
-  if (showAuth) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="absolute top-4 left-4">
-          <button
-            onClick={() => setShowAuth(false)}
-            className="text-gray-600 hover:text-gray-900 font-medium"
-          >
-            ← Retour
-          </button>
-        </div>
-        {authMode === 'login' ? (
-          <Login onToggle={toggleAuthMode} />
-        ) : (
-          <Register onToggle={toggleAuthMode} />
-        )}
-      </div>
-    );
-  }
-
-  if (showCenterForm) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="absolute top-4 left-4 z-10">
-          <button
-            onClick={() => setShowCenterForm(false)}
-            className="text-gray-600 hover:text-gray-900 font-medium bg-white px-4 py-2 rounded-lg shadow-sm"
-          >
-            ← Retour à l'accueil
-          </button>
-        </div>
-        <CenterSignup />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white">
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -92,10 +48,7 @@ export default function LandingPage() {
               <a href="#contact" className="text-gray-700 hover:text-black transition font-medium">Contact</a>
             </div>
             <button
-              onClick={() => {
-                setAuthMode('login');
-                setShowAuth(true);
-              }}
+              onClick={() => navigate('/login')}
               className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500 transition font-semibold"
             >
               Connexion
@@ -116,10 +69,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => {
-                    setAuthMode('register');
-                    setShowAuth(true);
-                  }}
+                  onClick={() => navigate('/register')}
                   className="bg-yellow-400 text-black px-8 py-4 rounded-lg font-semibold hover:bg-yellow-500 transition"
                 >
                   Commencer maintenant
@@ -236,7 +186,7 @@ export default function LandingPage() {
 
           <div className="text-center">
             <button
-              onClick={() => setShowCenterForm(true)}
+              onClick={() => navigate('/signup/center')}
               className="inline-flex items-center space-x-2 bg-yellow-400 text-black px-8 py-4 rounded-lg font-semibold hover:bg-yellow-500 transition"
             >
               <Building2 className="w-5 h-5" />

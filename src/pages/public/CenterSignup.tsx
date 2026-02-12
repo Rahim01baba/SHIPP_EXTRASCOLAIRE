@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Building2, User, Mail, Phone, Lock, Upload, Plus, Trash2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Edit2 } from 'lucide-react';
 
@@ -469,6 +470,14 @@ export default function CenterSignup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-yellow-50 py-12 px-4">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition bg-white px-4 py-2 rounded-lg shadow-sm"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="font-medium">Retour</span>
+      </Link>
+
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
