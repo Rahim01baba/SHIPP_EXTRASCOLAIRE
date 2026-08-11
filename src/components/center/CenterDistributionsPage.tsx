@@ -32,7 +32,7 @@ export default function CenterDistributionsPage({ center }: { center: Center }) 
 
     const { data } = await supabase
       .from('enrollments')
-      .select('enrollment_month, amount_total, payment_status')
+      .select('enrollment_month, total_amount, payment_status')
       .eq('center_id', center.id)
       .eq('payment_status', 'paid')
       .gte('enrollment_month', startDate.toISOString().split('T')[0])
@@ -44,7 +44,7 @@ export default function CenterDistributionsPage({ center }: { center: Center }) 
         if (!acc[month]) {
           acc[month] = 0;
         }
-        acc[month] += item.amount_total || 0;
+        acc[month] += item.total_amount || 0;
         return acc;
       }, {});
 
