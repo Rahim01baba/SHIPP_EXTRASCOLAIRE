@@ -16,7 +16,7 @@ interface Child {
 interface Center {
   id: string;
   name: string;
-  address: string;
+  address: string | null; address_text: string | null;
 }
 
 interface Activity {
@@ -98,7 +98,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
   const loadCenters = async () => {
     const { data, error: fetchError } = await supabase
       .from('centers')
-      .select('id, name, address')
+      .select('id, name, address, address_text')
       .eq('status', 'approved')
       .eq('is_active', true)
       .order('name');
@@ -483,7 +483,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
                         />
                         <div className="ml-3">
                           <p className="font-medium">{center.name}</p>
-                          <p className="text-sm text-gray-600">{center.address}</p>
+                          <p className="text-sm text-gray-600">{center.address_text || center.address}</p>
                         </div>
                       </label>
                     ))}
