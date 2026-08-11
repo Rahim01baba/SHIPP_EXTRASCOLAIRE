@@ -4,7 +4,7 @@ import { Plus, Edit, Power, Tag } from 'lucide-react';
 
 interface ActivityType {
   id: string;
-  label: string;
+  name: string;
   is_active: boolean;
   created_at: string;
 }
@@ -24,7 +24,7 @@ export default function ActivityTypesPage() {
     const { data } = await supabase
       .from('activity_types')
       .select('*')
-      .order('label');
+      .order('name');
 
     if (data) setTypes(data);
     setLoading(false);
@@ -35,7 +35,7 @@ export default function ActivityTypesPage() {
 
     const { data, error } = await supabase
       .from('activity_types')
-      .insert([{ label: newLabel.trim(), is_active: true }])
+      .insert([{ name: newLabel.trim(), is_active: true }])
       .select()
       .single();
 
@@ -126,7 +126,7 @@ export default function ActivityTypesPage() {
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-3">
                     <Tag className="w-5 h-5 text-gray-400" />
-                    <span className="font-medium">{type.label}</span>
+                    <span className="font-medium">{type.name}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
