@@ -11,7 +11,7 @@ interface EditCenterModalProps {
     status: string;
     phone: string;
     email: string;
-    address: string;
+    address_text: string | null;
     google_maps_link: string | null;
     logo_url: string | null;
     is_active: boolean;
@@ -30,7 +30,7 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
     name: center.name,
     phone: center.phone,
     email: center.email,
-    address: center.address,
+    address_text: center.address_text || center.address || '',
     google_maps_link: center.google_maps_link || '',
     status: center.status,
     is_active: center.is_active,
@@ -222,7 +222,7 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
           name: formData.name,
           phone: formData.phone,
           email: formData.email,
-          address: formData.address,
+          address_text: formData.address_text,
           google_maps_link: formData.google_maps_link || null,
           status: formData.status,
           is_active: formData.is_active,
@@ -347,8 +347,7 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
                   Adresse *
                 </label>
                 <textarea
-                  name="address"
-                  value={formData.address}
+                  name="address_text" value={formData.address_text}
                   onChange={handleChange}
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
