@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Activity, Plus, Edit2, Power, Trash2, AlertCircle, Clock, Users, DollarSign, Lock } from 'lucide-react';
+import { Activity, Plus, Edit2, Power, Trash2, Clock } from 'lucide-react';
 import AddEditActivityModal from './AddEditActivityModal';
 import PageHeader from '../ui/PageHeader';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -19,15 +19,7 @@ interface ActivityData {
   description: string | null;
   activity_type_id: string | null;
   activity_types: { name: string } | null;
-  age_min: number;
-  age_max: number;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  course_price: number;
-  transport_price: number | null;
-  use_global_transport: boolean;
-  max_participants: number;
+  schedule_day: string | null; schedule_time: string | null; course_price: number; transport_price: number | null; total_price: number; use_global_transport: boolean;
   is_active: boolean;
 }
 
@@ -82,13 +74,8 @@ export default function CenterActivitiesPage({ center }: { center: Center }) {
     }
   };
 
-  const getDayLabel = (day: number) => {
-    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    return days[day] || 'Samedi';
-  };
-
   const calculateTotal = (activity: ActivityData) => {
-    return activity.course_price + (activity.transport_price || 0);
+    return activity.total_price || (activity.course_price + (activity.transport_price || 0));
   };
 
   if (loading) {
@@ -161,35 +148,7 @@ export default function CenterActivitiesPage({ center }: { center: Center }) {
                   </p>
                 )}
 
-                <div className="space-y-2 text-sm mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>Âge</span>
-                    </span>
-                    <span className="font-medium">{activity.age_min}-{activity.age_max} ans</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Horaire</span>
-                    </span>
-                    <span className="font-medium">
-                      {getDayLabel(activity.day_of_week)} {activity.start_time}-{activity.end_time}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>Capacité</span>
-                    </span>
-                    <span className="font-medium">{activity.max_participants} places</span>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4 space-y-2">
+                {(activity.schedule_day || activity.schedule_time) && (<div className="space-y-2 text-sm mb-4"><div className="flex items-center justify-between"><span className="text-gray-600 flex items-center space-x-1"><Clock className="w-4 h-4" /><span>Horaire</span></span><span className="font-medium">{[activity.schedule_day, activity.schedule_time].filter(Boolean).join(' - ')}</span></div></div>)}<div className="border-t pt-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Cours</span>
                     <span className="font-medium">{activity.course_price.toLocaleString('fr-FR')} F</span>
