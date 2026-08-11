@@ -31,7 +31,7 @@ export default function CenterPaymentsPage({ center }: { center: Center }) {
 
     const { data } = await supabase
       .from('enrollments')
-      .select('enrollment_month, amount_total, payment_status, status')
+      .select('enrollment_month, total_amount, payment_status, status')
       .eq('center_id', center.id)
       .gte('enrollment_month', startDate.toISOString().split('T')[0])
       .lte('enrollment_month', endDate.toISOString().split('T')[0]);
@@ -48,12 +48,12 @@ export default function CenterPaymentsPage({ center }: { center: Center }) {
           };
         }
 
-        if (item.status === 'confirmed') {
-          acc[month].theoretical_total += item.amount_total || 0;
+        if (item.status === 'active') {
+          acc[month].theoretical_total += item.total_amount || 0;
         }
 
         if (item.payment_status === 'paid') {
-          acc[month].paid_total += item.amount_total || 0;
+          acc[month].paid_total += item.total_amount || 0;
         } else if (item.payment_status === 'pending') {
           acc[month].pending_count++;
         }
