@@ -217,7 +217,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
 
     const { data: center, error: centerError } = await supabase
       .from('centers')
-      .select('validation_status, is_active, name')
+      .select('status, is_active, name')
       .eq('id', selectedCenter)
       .maybeSingle();
 
@@ -229,7 +229,7 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
       throw new Error('Centre introuvable');
     }
 
-    if (center.validation_status !== 'validated') {
+    if (center.status !== 'approved') {
       throw new Error(`Le centre "${center.name}" n'est pas encore validé par SHIPP`);
     }
 
@@ -255,50 +255,12 @@ export default function NewEnrollmentModal({ onClose, onSuccess }: NewEnrollment
 
     const { data: activity, error: activityError } = await supabase
       .from('activities')
-      .select('max_participants, name, center_id, centers(age_min, age_max)')
+      .select('id, name, center_id, is_active')
       .eq('id', selectedActivity)
       .maybeSingle();
 
     if (activityError || !activity) {
       throw new Error('Erreur lors de la vérification de l\'activité');
-    }
-
-    if (activity.max_participants && activity.max_participants > 0) {
-      const { count } = await supabase
-        .from('enrollments')
-        .select('*', { count: 'exact', head: true })
-        .eq('activity_id', selectedActivity)
-        .eq('enrollment_month', enrollmentDate)
-        .eq('status', 'active');
-
-      if (count && count >= activity.max_participants) {
-        throw new Error(
-          `L'activité "${activity.name}" est complète pour ce mois. ` +
-          `Capacité : ${activity.max_participants} places.`
-        );
-      }
-    }
-
-    const { data: child, error: childError } = await supabase
-      .from('children')
-      .select('birth_date, first_name')
-      .eq('id', selectedChild)
-      .maybeSingle();
-
-    if (childError || !child) {
-      throw new Error('Erreur lors de la vérification de l\'enfant');
-    }
-
-    const childAge = calculateAge(child.birth_date);
-    const centerData = activity.centers as any;
-
-    if (centerData && centerData.age_min && centerData.age_max) {
-      if (childAge < centerData.age_min || childAge > centerData.age_max) {
-        throw new Error(
-          `${child.first_name} (${childAge} ans) n'est pas dans la tranche d'âge ` +
-          `requise pour cette activité (${centerData.age_min}-${centerData.age_max} ans)`
-        );
-      }
     }
 
     console.log('[ENROLLMENT] All validations passed ✓');
