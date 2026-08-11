@@ -88,7 +88,7 @@ export default function DistributionsPage() {
           .from('enrollments')
           .select('id, course_price, transport_price')
           .eq('center_id', center.id)
-          .eq('status', 'confirmed')
+          .eq('status', 'active')
           .lte('enrollment_month', startDate);
 
         if (!enrollments || enrollments.length === 0) {
