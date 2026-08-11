@@ -160,7 +160,7 @@ export default function ParentDetailsModal({ parentId, onClose }: ParentDetailsM
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
 
-      const enrollment = monthlyData.enrollment;
+      const enrollment = monthData.enrollment;
       if (!enrollment) return;
 
       const monthDate = new Date(new Date().getFullYear(), monthData.monthIndex, 1).toISOString().split('T')[0];
