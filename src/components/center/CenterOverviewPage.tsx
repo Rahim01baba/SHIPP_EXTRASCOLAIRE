@@ -65,7 +65,7 @@ export default function CenterOverviewPage({ center }: { center: Center }) {
 
     const { data: enrollments } = await supabase
       .from('enrollments')
-      .select('child_id, status, amount_total, payment_status')
+      .select('child_id, status, total_amount, payment_status')
       .eq('center_id', center.id)
       .gte('enrollment_month', monthStart)
       .lte('enrollment_month', monthEnd);
@@ -75,10 +75,10 @@ export default function CenterOverviewPage({ center }: { center: Center }) {
       const uniqueChildren = new Set(activeEnrollmentsData.map(e => e.child_id)).size;
       const activeEnrollmentsCount = activeEnrollmentsData.length;
       const theoreticalRevenue = activeEnrollmentsData
-        .reduce((sum, e) => sum + (e.amount_total || 0), 0);
+        .reduce((sum, e) => sum + (e.total_amount || 0), 0);
       const paidRevenue = activeEnrollmentsData
         .filter(e => e.payment_status === 'paid')
-        .reduce((sum, e) => sum + (e.amount_total || 0), 0);
+        .reduce((sum, e) => sum + (e.total_amount || 0), 0);
       const pendingPayments = activeEnrollmentsData.filter(e => e.payment_status === 'pending').length;
 
       setKpis({
@@ -100,7 +100,7 @@ export default function CenterOverviewPage({ center }: { center: Center }) {
       .from('enrollments')
       .select('activity_id, activities(name)')
       .eq('center_id', center.id)
-      .eq('status', 'confirmed')
+      .eq('status', 'active')
       .gte('enrollment_month', monthStart)
       .lte('enrollment_month', monthEnd);
 
@@ -132,7 +132,7 @@ export default function CenterOverviewPage({ center }: { center: Center }) {
       .from('enrollments')
       .select('children(birth_date)')
       .eq('center_id', center.id)
-      .eq('status', 'confirmed')
+      .eq('status', 'active')
       .gte('enrollment_month', monthStart)
       .lte('enrollment_month', monthEnd);
 
