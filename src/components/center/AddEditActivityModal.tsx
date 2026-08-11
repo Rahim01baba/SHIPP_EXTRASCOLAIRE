@@ -12,15 +12,7 @@ interface Activity {
   name: string;
   description: string | null;
   activity_type_id: string | null;
-  age_min: number;
-  age_max: number;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  course_price: number;
-  transport_price: number | null;
-  use_global_transport: boolean;
-  max_participants: number;
+  schedule_day: string | null; schedule_time: string | null; course_price: number; transport_price: number | null; total_price: number; use_global_transport: boolean; is_active: boolean;
 }
 
 interface ActivityType {
@@ -47,13 +39,7 @@ export default function AddEditActivityModal({
     name: activity?.name || '',
     description: activity?.description || '',
     activity_type_id: activity?.activity_type_id || '',
-    age_min: activity?.age_min || 5,
-    age_max: activity?.age_max || 18,
-    day_of_week: activity?.day_of_week || 6,
-    start_time: activity?.start_time || '09:00',
-    end_time: activity?.end_time || '11:00',
-    course_price: activity?.course_price || 0,
-    max_participants: activity?.max_participants || 20,
+    schedule_day: activity?.schedule_day || '', schedule_time: activity?.schedule_time || '', course_price: activity?.course_price || 0, is_active: activity?.is_active ?? true,
   });
 
   useEffect(() => {
@@ -91,11 +77,6 @@ export default function AddEditActivityModal({
       return;
     }
 
-    if (!formData.start_time || !formData.end_time) {
-      setError('Veuillez renseigner l\'heure de début et de fin');
-      return;
-    }
-
     setSaving(true);
 
     const dataToSave: any = {
@@ -103,18 +84,11 @@ export default function AddEditActivityModal({
       name: formData.name.trim(),
       description: formData.description.trim() || null,
       activity_type_id: formData.activity_type_id || null,
-      age_min: formData.age_min,
-      age_max: formData.age_max,
-      day_of_week: formData.day_of_week,
-      start_time: formData.start_time,
-      end_time: formData.end_time,
-      max_participants: formData.max_participants,
-      use_global_transport: true,
+      schedule_day: formData.schedule_day.trim() || null, schedule_time: formData.schedule_time.trim() || null, use_global_transport: true, is_active: formData.is_active,
     };
 
     if (center.allow_center_edit_prices || !activity) {
-      dataToSave.course_price = formData.course_price;
-    }
+      dataToSave.course_price = formData.course_price; dataToSave.total_price = formData.course_price + centerTransportFee; }
 
     let result;
     if (activity) {
@@ -215,97 +189,7 @@ export default function AddEditActivityModal({
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Âge minimum
-              </label>
-              <input
-                type="number"
-                min="3"
-                max="18"
-                value={formData.age_min}
-                onChange={(e) => setFormData({ ...formData, age_min: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Âge maximum
-              </label>
-              <input
-                type="number"
-                min="3"
-                max="18"
-                value={formData.age_max}
-                onChange={(e) => setFormData({ ...formData, age_max: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Jour
-              </label>
-              <select
-                value={formData.day_of_week}
-                onChange={(e) => setFormData({ ...formData, day_of_week: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-              >
-                <option value="6">Samedi</option>
-                <option value="0">Dimanche</option>
-                <option value="1">Lundi</option>
-                <option value="2">Mardi</option>
-                <option value="3">Mercredi</option>
-                <option value="4">Jeudi</option>
-                <option value="5">Vendredi</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Heure début *
-              </label>
-              <input
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Heure fin *
-              </label>
-              <input
-                type="time"
-                value={formData.end_time}
-                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Capacité maximum
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.max_participants}
-              onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-            />
-          </div>
-
-          <div className="border-t pt-6 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-700 mb-1">Jour(s)</label><input type="text" value={formData.schedule_day} onChange={(e) => setFormData({ ...formData, schedule_day: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" placeholder="Ex: Samedi" /></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Horaire</label><input type="text" value={formData.schedule_time} onChange={(e) => setFormData({ ...formData, schedule_time: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" placeholder="Ex: 09h00-11h00" /></div></div><div className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} className="w-4 h-4 text-yellow-500 rounded" /><label className="text-sm font-medium text-gray-700">Activité active (visible pour les parents)</label></div><div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold flex items-center space-x-2">
               <span>Tarification</span>
               {!canEditPrices && <Lock className="w-4 h-4 text-gray-400" />}
