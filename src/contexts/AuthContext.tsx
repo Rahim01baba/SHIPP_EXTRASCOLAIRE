@@ -200,35 +200,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: authError };
       }
 
-      const newUserId = data.user?.id;
-      if (!newUserId) {
+      if (!data.user?.id) {
         const err = new Error("Supabase n'a pas retourné user.id après signUp");
         setAuthError(err.message);
         return { error: err };
       }
 
-      const { error: upsertError } = await supabase
-        .from('profiles')
-        .upsert(
-          {
-            id: newUserId,
-            email,
-            full_name: userData.full_name,
-            phone: userData.phone,
-            role: userData.role,
-            address: userData.address ?? null,
-            zone_id: userData.zone_id ?? null,
-          },
-          { onConflict: 'id' }
-        );
-
-      if (upsertError) {
-        if (isDev) console.error('[Auth] profiles upsert error:', upsertError);
-        setAuthError(upsertError.message);
-        return { error: upsertError as any };
-      }
-
-      if (isDev) console.log('[Auth] signUp OK + profile upsert OK');
+      // Le profil est créé automatiquement côté base de données par le trigger
+      // on_auth_user_created (SECURITY DEFINER) à partir des métadonnées
+      // transmises ci-dessus. On ne tente plus d'écrire dans "profiles" depuis
+      // le client : tant que l'email n'est pas confirmé (session absente),
+      // cette écriture échouait avec une erreur RLS ("new row violates
+      // row-level security policy for table profiles").
+      if (isDev) console.log('[Auth] signUp OK (profil créé par le trigger DB)');
       return { error: null };
     } catch (e: any) {
       if (isDev) console.error('[Auth] signUp exception:', e);
