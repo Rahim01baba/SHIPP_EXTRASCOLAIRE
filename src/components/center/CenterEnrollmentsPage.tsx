@@ -18,7 +18,7 @@ interface Enrollment {
   children: {
     first_name: string;
     last_name: string;
-    date_of_birth: string;
+    birth_date: string;
   };
   profiles: {
     full_name: string;
@@ -74,7 +74,7 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
       .from('enrollments')
       .select(`
         *,
-        children(first_name, last_name, date_of_birth),
+        children(first_name, last_name, birth_date),
         profiles(full_name, phone),
         activities(name)
       `)
@@ -275,9 +275,9 @@ export default function CenterEnrollmentsPage({ center }: { center: Center }) {
                         <div className="text-sm font-medium text-gray-900">
                           {enrollment.children ? `${enrollment.children.first_name} ${enrollment.children.last_name}` : 'N/A'}
                         </div>
-                        {enrollment.children?.date_of_birth && (
+                        {enrollment.children?.birth_date && (
                           <div className="text-sm text-gray-500">
-                            {calculateAge(enrollment.children.date_of_birth)} ans
+                            {calculateAge(enrollment.children.birth_date)} ans
                           </div>
                         )}
                       </div>
