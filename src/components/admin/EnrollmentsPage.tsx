@@ -41,8 +41,7 @@ interface Enrollment extends RawEnrollment {
   child_last_name: string;
   activity_name: string;
   center_name: string;
-  parent_first_name: string;
-  parent_last_name: string;
+  parent_full_name: string;
   parent_email: string;
   parent_phone?: string;
 }
@@ -171,7 +170,7 @@ export default function EnrollmentsPage() {
       const [childrenResult, activitiesResult, parentsResult] = await Promise.all([
         supabase.from('children').select('id, first_name, last_name').in('id', childIds),
         supabase.from('activities').select('id, name, center_id').in('id', activityIds),
-        supabase.from('profiles').select('id, first_name, last_name, email, phone').in('id', parentIds),
+        supabase.from('profiles').select('id, full_name, email, phone').in('id', parentIds),
       ]);
 
       console.log('[ADMIN ENROLLMENTS] Children loaded:', childrenResult.data?.length);
@@ -216,8 +215,7 @@ export default function EnrollmentsPage() {
           child_last_name: child?.last_name || 'Unknown',
           activity_name: activity?.name || 'Unknown',
           center_name: center?.name || 'Unknown',
-          parent_first_name: parent?.first_name || 'Unknown',
-          parent_last_name: parent?.last_name || 'Unknown',
+          parent_full_name: parent?.full_name || 'Unknown',
           parent_email: parent?.email || 'Unknown',
           parent_phone: parent?.phone,
         };
@@ -537,7 +535,7 @@ export default function EnrollmentsPage() {
                         <div>
                           <span className="text-gray-600">Parent:</span>
                           <span className="ml-2 font-medium">
-                            {enrollment.parent_first_name} {enrollment.parent_last_name}
+                            {enrollment.parent_full_name}
                           </span>
                         </div>
 
