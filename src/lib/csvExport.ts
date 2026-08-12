@@ -79,7 +79,7 @@ export function exportEnrollmentsToCSV(enrollments: any[], filename: string) {
 
   const csvData = enrollments.map(enrollment => ({
     'Enfant': enrollment.children ? `${enrollment.children.first_name} ${enrollment.children.last_name}` : 'N/A',
-    'Âge': enrollment.children?.date_of_birth ? calculateAge(enrollment.children.date_of_birth) : 'N/A',
+    'Âge': enrollment.children?.birth_date ? calculateAge(enrollment.children.birth_date) : 'N/A',
     'Parent': enrollment.profiles?.full_name || 'N/A',
     'Téléphone': enrollment.profiles?.phone || 'N/A',
     'Activité': enrollment.activities?.name || 'N/A',
