@@ -87,7 +87,7 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
         total_price,
         use_global_transport,
         is_active,
-        day_of_week,
+        days_of_week,
         start_time,
         end_time,
         activity_types!inner(name)
@@ -113,7 +113,7 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
         total_price: a.total_price,
         use_global_transport: a.use_global_transport,
         is_active: a.is_active,
-        day_of_week: a.day_of_week,
+        days_of_week: a.days_of_week,
         start_time: a.start_time,
         end_time: a.end_time,
       }));
@@ -582,15 +582,15 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">{activity.activity_type_name}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">
-                              {activity.day_of_week !== null && activity.day_of_week !== undefined ? (
-                                <div>{DAY_LABELS[activity.day_of_week]}</div>
+                              {activity.days_of_week && activity.days_of_week.length > 0 ? (
+                                <div>{activity.days_of_week.map((d) => DAY_LABELS[d]).join(', ')}</div>
                               ) : null}
                               {(activity.start_time || activity.end_time) && (
                                 <div className="text-xs text-gray-500">
                                   {(activity.start_time || '').slice(0, 5)}{activity.start_time && activity.end_time ? ' - ' : ''}{(activity.end_time || '').slice(0, 5)}
                                 </div>
                               )}
-                              {(activity.day_of_week === null || activity.day_of_week === undefined) && !activity.start_time && !activity.end_time && (
+                              {(!activity.days_of_week || activity.days_of_week.length === 0) && !activity.start_time && !activity.end_time && (
                                 <span className="text-gray-400">-</span>
                               )}
                             </td>
