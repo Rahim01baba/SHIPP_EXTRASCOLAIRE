@@ -23,7 +23,7 @@ interface AddEditActivityModalProps {
     transport_price: number;
     use_global_transport: boolean;
     is_active: boolean;
-    day_of_week: number | null;
+    days_of_week: number[] | null;
     start_time: string | null;
     end_time: string | null;
   };
@@ -45,7 +45,7 @@ export default function AddEditActivityModal({ centerId, activity, onClose, onSu
     transport_price: activity?.transport_price || 0,
     use_global_transport: activity?.use_global_transport ?? true,
     is_active: activity?.is_active ?? true,
-    day_of_week: activity?.day_of_week ?? 6,
+    days_of_week: activity?.days_of_week ?? [6],
     start_time: activity?.start_time ? activity.start_time.slice(0, 5) : '09:00',
     end_time: activity?.end_time ? activity.end_time.slice(0, 5) : '11:00',
   });
@@ -100,7 +100,16 @@ export default function AddEditActivityModal({ centerId, activity, onClose, onSu
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked :
-        type === 'number' || name === 'day_of_week' ? Number(value) : value,
+        type === 'number' ? Number(value) : value,
+    }));
+  };
+
+  const toggleDay = (value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      days_of_week: prev.days_of_week.includes(value)
+        ? prev.days_of_week.filter((d: number) => d !== value)
+        : [...prev.days_of_week, value].sort((a: number, b: number) => a - b),
     }));
   };
 
@@ -147,7 +156,7 @@ export default function AddEditActivityModal({ centerId, activity, onClose, onSu
         total_price: totalPrice,
         use_global_transport: formData.use_global_transport,
         is_active: formData.is_active,
-        day_of_week: formData.day_of_week,
+        days_of_week: formData.days_of_week,
         start_time: formData.start_time,
         end_time: formData.end_time,
       };
@@ -284,18 +293,28 @@ export default function AddEditActivityModal({ centerId, activity, onClose, onSu
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jour
+                  Jour(s)
                 </label>
-                <select
-                  name="day_of_week"
-                  value={formData.day_of_week}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                >
+                <div className="flex flex-wrap gap-2">
                   {DAYS_OF_WEEK.map(day => (
-                    <option key={day.value} value={day.value}>{day.label}</option>
+                    <label
+                      key={day.value}
+                      className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
+                        formData.days_of_week.includes(day.value)
+                          ? 'bg-yellow-400 border-yellow-400 text-gray-900'
+                          : 'bg-white border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={formData.days_of_week.includes(day.value)}
+                        onChange={() => toggleDay(day.value)}
+                      />
+                      {day.label.slice(0, 3)}
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
 
               <div>
