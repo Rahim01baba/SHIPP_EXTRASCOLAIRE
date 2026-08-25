@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Building2, User, Mail, Phone, Lock, Upload, Plus, Trash2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Edit2 } from 'lucide-react';
 
+const DAYS_OF_WEEK = [
+  { value: '0', label: 'Dimanche' },
+  { value: '1', label: 'Lundi' },
+  { value: '2', label: 'Mardi' },
+  { value: '3', label: 'Mercredi' },
+  { value: '4', label: 'Jeudi' },
+  { value: '5', label: 'Vendredi' },
+  { value: '6', label: 'Samedi' },
+];
+
 interface ActivityForm {
   id: string;
   name: string;
@@ -10,9 +20,10 @@ interface ActivityForm {
   description: string;
   age_min: string;
   age_max: string;
-  schedule_day: string;
-  schedule_time: string;
-  capacity: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  max_participants: string;
   course_price: string;
   use_global_transport: boolean;
   transport_price: string;
@@ -59,9 +70,10 @@ export default function CenterSignup() {
     description: '',
     age_min: '',
     age_max: '',
-    schedule_day: 'Samedi',
-    schedule_time: '',
-    capacity: '',
+    day_of_week: '6',
+    start_time: '09:00',
+    end_time: '11:00',
+    max_participants: '',
     course_price: '',
     use_global_transport: true,
     transport_price: '0',
@@ -179,9 +191,10 @@ export default function CenterSignup() {
       description: '',
       age_min: '',
       age_max: '',
-      schedule_day: 'Samedi',
-      schedule_time: '',
-      capacity: '',
+      day_of_week: '6',
+      start_time: '09:00',
+      end_time: '11:00',
+      max_participants: '',
       course_price: '',
       use_global_transport: true,
       transport_price: '0',
@@ -420,9 +433,10 @@ export default function CenterSignup() {
           description: activity.description || null,
           age_min: activity.age_min ? Number(activity.age_min) : null,
           age_max: activity.age_max ? Number(activity.age_max) : null,
-          schedule_day: activity.schedule_day || null,
-          schedule_time: activity.schedule_time || null,
-          capacity: activity.capacity ? Number(activity.capacity) : null,
+          day_of_week: activity.day_of_week ? Number(activity.day_of_week) : 6,
+          start_time: activity.start_time || '09:00',
+          end_time: activity.end_time || '11:00',
+          max_participants: activity.max_participants ? Number(activity.max_participants) : null,
           course_price: coursePrice,
           transport_price: transportPrice,
           total_price: totalPrice,
@@ -781,9 +795,10 @@ export default function CenterSignup() {
                           description: '',
                           age_min: '',
                           age_max: '',
-                          schedule_day: 'Samedi',
-                          schedule_time: '',
-                          capacity: '',
+                          day_of_week: '6',
+                          start_time: '09:00',
+                          end_time: '11:00',
+                          max_participants: '',
                           course_price: '',
                           use_global_transport: true,
                           transport_price: '0',
@@ -862,24 +877,37 @@ export default function CenterSignup() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Jour(s)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Jour</label>
+                        <select
+                          name="day_of_week"
+                          value={currentActivity.day_of_week}
+                          onChange={handleActivityChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                        >
+                          {DAYS_OF_WEEK.map(day => (
+                            <option key={day.value} value={day.value}>{day.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Heure de début</label>
                         <input
-                          type="text"
-                          name="schedule_day"
-                          value={currentActivity.schedule_day}
+                          type="time"
+                          name="start_time"
+                          value={currentActivity.start_time}
                           onChange={handleActivityChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Horaire</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Heure de fin</label>
                         <input
-                          type="text"
-                          name="schedule_time"
-                          value={currentActivity.schedule_time}
+                          type="time"
+                          name="end_time"
+                          value={currentActivity.end_time}
                           onChange={handleActivityChange}
-                          placeholder="Ex: 14h-16h"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
                         />
                       </div>
@@ -888,8 +916,8 @@ export default function CenterSignup() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Capacité</label>
                         <input
                           type="number"
-                          name="capacity"
-                          value={currentActivity.capacity}
+                          name="max_participants"
+                          value={currentActivity.max_participants}
                           onChange={handleActivityChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
                         />
