@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { X, Lock, AlertCircle } from 'lucide-react';
 
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Dimanche' },
+  { value: 1, label: 'Lundi' },
+  { value: 2, label: 'Mardi' },
+  { value: 3, label: 'Mercredi' },
+  { value: 4, label: 'Jeudi' },
+  { value: 5, label: 'Vendredi' },
+  { value: 6, label: 'Samedi' },
+];
+
 interface Center {
   id: string;
   allow_center_edit_prices: boolean;
@@ -12,7 +22,7 @@ interface Activity {
   name: string;
   description: string | null;
   activity_type_id: string | null;
-  schedule_day: string | null; schedule_time: string | null; course_price: number; transport_price: number | null; total_price: number; use_global_transport: boolean; is_active: boolean;
+  day_of_week: number | null; start_time: string | null; end_time: string | null; course_price: number; transport_price: number | null; total_price: number; use_global_transport: boolean; is_active: boolean;
 }
 
 interface ActivityType {
@@ -39,7 +49,7 @@ export default function AddEditActivityModal({
     name: activity?.name || '',
     description: activity?.description || '',
     activity_type_id: activity?.activity_type_id || '',
-    schedule_day: activity?.schedule_day || '', schedule_time: activity?.schedule_time || '', course_price: activity?.course_price || 0, is_active: activity?.is_active ?? true,
+    day_of_week: activity?.day_of_week ?? 6, start_time: activity?.start_time ? activity.start_time.slice(0, 5) : '09:00', end_time: activity?.end_time ? activity.end_time.slice(0, 5) : '11:00', course_price: activity?.course_price || 0, is_active: activity?.is_active ?? true,
   });
 
   useEffect(() => {
@@ -84,7 +94,7 @@ export default function AddEditActivityModal({
       name: formData.name.trim(),
       description: formData.description.trim() || null,
       activity_type_id: formData.activity_type_id || null,
-      schedule_day: formData.schedule_day.trim() || null, schedule_time: formData.schedule_time.trim() || null, use_global_transport: true, is_active: formData.is_active,
+      day_of_week: formData.day_of_week, start_time: formData.start_time, end_time: formData.end_time, use_global_transport: true, is_active: formData.is_active,
     };
 
     if (center.allow_center_edit_prices || !activity) {
@@ -189,7 +199,7 @@ export default function AddEditActivityModal({
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-700 mb-1">Jour(s)</label><input type="text" value={formData.schedule_day} onChange={(e) => setFormData({ ...formData, schedule_day: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" placeholder="Ex: Samedi" /></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Horaire</label><input type="text" value={formData.schedule_time} onChange={(e) => setFormData({ ...formData, schedule_time: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" placeholder="Ex: 09h00-11h00" /></div></div><div className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} className="w-4 h-4 text-yellow-500 rounded" /><label className="text-sm font-medium text-gray-700">Activité active (visible pour les parents)</label></div><div className="border-t pt-6 space-y-4">
+          <div className="grid md:grid-cols-3 gap-4"><div><label className="block text-sm font-medium text-gray-700 mb-1">Jour</label><select value={formData.day_of_week} onChange={(e) => setFormData({ ...formData, day_of_week: Number(e.target.value) })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent">{DAYS_OF_WEEK.map(day => (<option key={day.value} value={day.value}>{day.label}</option>))}</select></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Heure de début</label><input type="time" value={formData.start_time} onChange={(e) => setFormData({ ...formData, start_time: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" /></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Heure de fin</label><input type="time" value={formData.end_time} onChange={(e) => setFormData({ ...formData, end_time: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" /></div></div><div className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} className="w-4 h-4 text-yellow-500 rounded" /><label className="text-sm font-medium text-gray-700">Activité active (visible pour les parents)</label></div><div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold flex items-center space-x-2">
               <span>Tarification</span>
               {!canEditPrices && <Lock className="w-4 h-4 text-gray-400" />}
