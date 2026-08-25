@@ -20,7 +20,7 @@ interface ActivityForm {
   description: string;
   age_min: string;
   age_max: string;
-  day_of_week: string;
+  days_of_week: string[];
   start_time: string;
   end_time: string;
   max_participants: string;
@@ -70,7 +70,7 @@ export default function CenterSignup() {
     description: '',
     age_min: '',
     age_max: '',
-    day_of_week: '6',
+    days_of_week: ['6'],
     start_time: '09:00',
     end_time: '11:00',
     max_participants: '',
@@ -162,6 +162,15 @@ export default function CenterSignup() {
     });
   };
 
+  const toggleActivityDay = (value: string) => {
+    setCurrentActivity(prev => ({
+      ...prev,
+      days_of_week: prev.days_of_week.includes(value)
+        ? prev.days_of_week.filter(d => d !== value)
+        : [...prev.days_of_week, value].sort(),
+    }));
+  };
+
   const handleAddActivity = () => {
     if (!currentActivity.name || !currentActivity.activity_type_id || !currentActivity.course_price) {
       setError('Veuillez remplir les champs obligatoires de la formation');
@@ -191,7 +200,7 @@ export default function CenterSignup() {
       description: '',
       age_min: '',
       age_max: '',
-      day_of_week: '6',
+      days_of_week: ['6'],
       start_time: '09:00',
       end_time: '11:00',
       max_participants: '',
@@ -433,7 +442,7 @@ export default function CenterSignup() {
           description: activity.description || null,
           age_min: activity.age_min ? Number(activity.age_min) : null,
           age_max: activity.age_max ? Number(activity.age_max) : null,
-          day_of_week: activity.day_of_week ? Number(activity.day_of_week) : 6,
+          days_of_week: activity.days_of_week && activity.days_of_week.length > 0 ? activity.days_of_week.map(Number) : [6],
           start_time: activity.start_time || '09:00',
           end_time: activity.end_time || '11:00',
           max_participants: activity.max_participants ? Number(activity.max_participants) : null,
@@ -795,7 +804,7 @@ export default function CenterSignup() {
                           description: '',
                           age_min: '',
                           age_max: '',
-                          day_of_week: '6',
+                          days_of_week: ['6'],
                           start_time: '09:00',
                           end_time: '11:00',
                           max_participants: '',
@@ -877,17 +886,27 @@ export default function CenterSignup() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Jour</label>
-                        <select
-                          name="day_of_week"
-                          value={currentActivity.day_of_week}
-                          onChange={handleActivityChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                        >
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Jour(s)</label>
+                        <div className="flex flex-wrap gap-2">
                           {DAYS_OF_WEEK.map(day => (
-                            <option key={day.value} value={day.value}>{day.label}</option>
+                            <label
+                              key={day.value}
+                              className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
+                                currentActivity.days_of_week.includes(day.value)
+                                  ? 'bg-yellow-400 border-yellow-400 text-gray-900'
+                                  : 'bg-white border-gray-300 text-gray-700'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="hidden"
+                                checked={currentActivity.days_of_week.includes(day.value)}
+                                onChange={() => toggleActivityDay(day.value)}
+                              />
+                              {day.label.slice(0, 3)}
+                            </label>
                           ))}
-                        </select>
+                        </div>
                       </div>
 
                       <div>
