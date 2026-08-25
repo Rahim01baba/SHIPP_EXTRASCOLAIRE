@@ -7,6 +7,8 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 import EmptyState from '../ui/EmptyState';
 import Badge from '../ui/Badge';
 
+const DAY_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
 interface Center {
   id: string;
   name: string;
@@ -19,7 +21,7 @@ interface ActivityData {
   description: string | null;
   activity_type_id: string | null;
   activity_types: { name: string } | null;
-  schedule_day: string | null; schedule_time: string | null; course_price: number; transport_price: number | null; total_price: number; use_global_transport: boolean;
+  day_of_week: number | null; start_time: string | null; end_time: string | null; course_price: number; transport_price: number | null; total_price: number; use_global_transport: boolean;
   is_active: boolean;
 }
 
@@ -148,7 +150,10 @@ export default function CenterActivitiesPage({ center }: { center: Center }) {
                   </p>
                 )}
 
-                {(activity.schedule_day || activity.schedule_time) && (<div className="space-y-2 text-sm mb-4"><div className="flex items-center justify-between"><span className="text-gray-600 flex items-center space-x-1"><Clock className="w-4 h-4" /><span>Horaire</span></span><span className="font-medium">{[activity.schedule_day, activity.schedule_time].filter(Boolean).join(' - ')}</span></div></div>)}<div className="border-t pt-4 space-y-2">
+                {(activity.day_of_week !== null && activity.day_of_week !== undefined || activity.start_time || activity.end_time) && (<div className="space-y-2 text-sm mb-4"><div className="flex items-center justify-between"><span className="text-gray-600 flex items-center space-x-1"><Clock className="w-4 h-4" /><span>Horaire</span></span><span className="font-medium">{[
+                  activity.day_of_week !== null && activity.day_of_week !== undefined ? DAY_LABELS[activity.day_of_week] : null,
+                  (activity.start_time || activity.end_time) ? `${(activity.start_time || '').slice(0, 5)}-${(activity.end_time || '').slice(0, 5)}` : null,
+                ].filter(Boolean).join(' - ')}</span></div></div>)}<div className="border-t pt-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Cours</span>
                     <span className="font-medium">{activity.course_price.toLocaleString('fr-FR')} F</span>
