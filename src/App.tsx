@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ResetPassword from './components/auth/ResetPassword';
 import { supabase } from './lib/supabase';
 import LandingPage from './pages/public/LandingPage';
 import CenterSignup from './pages/public/CenterSignup';
@@ -87,7 +88,7 @@ function AuthRedirect() {
   }
 }
 
-function App() {
+              function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -96,6 +97,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/signup/center" element={<CenterSignup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth-redirect" element={<AuthRedirect />} />
 
           <Route
