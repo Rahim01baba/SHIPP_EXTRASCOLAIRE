@@ -46,7 +46,7 @@ export default function LandingPage() {
               <a href="#centers" className="text-gray-700 hover:text-black transition font-medium">Centres</a>
               <a href="#faq" className="text-gray-700 hover:text-black transition font-medium">FAQ</a>
               <a href="#contact" className="text-gray-700 hover:text-black transition font-medium">Contact</a>
-            </div
+            </div>
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => navigate('/signup/center')}
@@ -54,7 +54,7 @@ export default function LandingPage() {
               >
                 <Building2 className="w-4 h-4" />
                 <span>Devenir centre partenaire</span>
-              </button>>
+              </button>
             <button
               onClick={() => navigate('/login')}
               className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500 transition font-semibold"
