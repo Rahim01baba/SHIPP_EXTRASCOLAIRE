@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Edit, Power, Tag } from 'lucide-react';
+import { Plus, Power, Tag } from 'lucide-react';
 
 interface ActivityType {
   id: string;
+  category: string;
   name: string;
   is_active: boolean;
   created_at: string;
@@ -14,6 +15,7 @@ export default function ActivityTypesPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newLabel, setNewLabel] = useState('');
+  const [newCategory, setNewCategory] = useState('');
 
   useEffect(() => {
     loadTypes();
@@ -24,18 +26,24 @@ export default function ActivityTypesPage() {
     const { data } = await supabase
       .from('activity_types')
       .select('*')
+      .order('category')
       .order('name');
 
     if (data) setTypes(data);
     setLoading(false);
   };
 
+  const existingCategories = useMemo(() => {
+    const set = new Set(types.map((t) => t.category).filter(Boolean));
+    return Array.from(set).sort();
+  }, [types]);
+
   const handleAdd = async () => {
-    if (!newLabel.trim()) return;
+    if (!newLabel.trim() || !newCategory.trim()) return;
 
     const { data, error } = await supabase
       .from('activity_types')
-      .insert([{ name: newLabel.trim(), is_active: true }])
+      .insert([{ name: newLabel.trim(), category: newCategory.trim(), is_active: true }])
       .select()
       .single();
 
@@ -47,6 +55,7 @@ export default function ActivityTypesPage() {
 
     console.log('[ActivityTypes] Type created successfully:', data);
     setNewLabel('');
+    setNewCategory('');
     setShowAdd(false);
     loadTypes();
   };
@@ -83,29 +92,56 @@ export default function ActivityTypesPage() {
       {showAdd && (
         <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-yellow-400">
           <h3 className="font-semibold mb-4">Nouveau type d'activité</h3>
-          <div className="flex space-x-4">
-            <input
-              type="text"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="Ex: Football, Natation, Danse..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-            />
-            <button
-              onClick={handleAdd}
-              className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500 transition font-medium"
-            >
-              Enregistrer
-            </button>
-            <button
-              onClick={() => {
-                setShowAdd(false);
-                setNewLabel('');
-              }}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              Annuler
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Catégorie
+              </label>
+              <input
+                type="text"
+                list="activity-categories"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Ex: Sports, Arts & Création..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+              />
+              <datalist id="activity-categories">
+                {existingCategories.map((cat) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nom de l'activité
+              </label>
+              <input
+                type="text"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="Ex: Football, Natation, Danse..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+              />
+            </div>
+            <div className="flex items-end space-x-2">
+              <button
+                onClick={handleAdd}
+                disabled={!newLabel.trim() || !newCategory.trim()}
+                className="flex-1 bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Enregistrer
+              </button>
+              <button
+                onClick={() => {
+                  setShowAdd(false);
+                  setNewLabel('');
+                  setNewCategory('');
+                }}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Annuler
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -114,6 +150,7 @@ export default function ActivityTypesPage() {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type d'activité</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date de création</th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Statut</th>
@@ -123,6 +160,7 @@ export default function ActivityTypesPage() {
           <tbody className="divide-y divide-gray-200">
             {types.map((type) => (
               <tr key={type.id} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4 text-sm text-gray-600">{type.category}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-3">
                     <Tag className="w-5 h-5 text-gray-400" />
