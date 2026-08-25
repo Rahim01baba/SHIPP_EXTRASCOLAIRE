@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import AddEditActivityModal from './AddEditActivityModal';
 
+const DAY_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
 interface EditCenterModalProps {
   center: {
     id: string;
@@ -85,8 +87,9 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
         total_price,
         use_global_transport,
         is_active,
-        schedule_day,
-        schedule_time,
+        day_of_week,
+        start_time,
+        end_time,
         activity_types!inner(name)
       `)
       .eq('center_id', center.id)
@@ -110,8 +113,9 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
         total_price: a.total_price,
         use_global_transport: a.use_global_transport,
         is_active: a.is_active,
-        schedule_day: a.schedule_day,
-        schedule_time: a.schedule_time,
+        day_of_week: a.day_of_week,
+        start_time: a.start_time,
+        end_time: a.end_time,
       }));
       setActivities(formatted);
     }
@@ -578,9 +582,17 @@ export default function EditCenterModal({ center, onClose, onSuccess }: EditCent
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">{activity.activity_type_name}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">
-                              {activity.schedule_day && <div>{activity.schedule_day}</div>}
-                              {activity.schedule_time && <div className="text-xs text-gray-500">{activity.schedule_time}</div>}
-                              {!activity.schedule_day && !activity.schedule_time && <span className="text-gray-400">-</span>}
+                              {activity.day_of_week !== null && activity.day_of_week !== undefined ? (
+                                <div>{DAY_LABELS[activity.day_of_week]}</div>
+                              ) : null}
+                              {(activity.start_time || activity.end_time) && (
+                                <div className="text-xs text-gray-500">
+                                  {(activity.start_time || '').slice(0, 5)}{activity.start_time && activity.end_time ? ' - ' : ''}{(activity.end_time || '').slice(0, 5)}
+                                </div>
+                              )}
+                              {(activity.day_of_week === null || activity.day_of_week === undefined) && !activity.start_time && !activity.end_time && (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
                               {activity.course_price.toLocaleString('fr-FR')} FCFA
