@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserPlus, ArrowLeft } from 'lucide-react';
 import type { UserRole } from '../../lib/database.types';
-import { normalizeCIPhone, phoneToAuthEmail } from '../../lib/phoneAuth';
 
 interface RegisterProps {
   onToggle?: () => void;
@@ -11,6 +10,7 @@ interface RegisterProps {
 
 export default function Register({ onToggle }: RegisterProps) {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -23,12 +23,6 @@ export default function Register({ onToggle }: RegisterProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    const normalizedPhone = normalizeCIPhone(phone);
-    if (!normalizedPhone) {
-      setError('Numéro de téléphone invalide. Saisissez un numéro ivoirien à 10 chiffres (ex. 07 01 02 03 04).');
-      return;
-    }
 
     if (password !== confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
@@ -43,25 +37,24 @@ export default function Register({ onToggle }: RegisterProps) {
     setLoading(true);
 
     try {
-      const { error } = await signUp(phoneToAuthEmail(normalizedPhone), password, {
+      console.log('[Register] Attempting signup with:', { email, role, full_name: fullName, phone });
+
+      const { error } = await signUp(email, password, {
         full_name: fullName,
-        phone: `+${normalizedPhone}`,
+        phone,
         role,
       });
 
       if (error) {
         console.error('[Register] Signup error:', error);
-        const msg = /already registered|already exists/i.test(error.message)
-          ? 'Ce numéro est déjà associé à un compte. Connectez-vous avec votre numéro et votre mot de passe.'
-          : `Erreur d'inscription: ${error.message}`;
-        setError(msg);
+        setError(`Erreur d'inscription: ${error.message}`);
         setLoading(false);
         return;
       }
 
       console.log('[Register] Signup successful!');
       setError('');
-      alert('Compte créé avec succès ! Connectez-vous avec votre numéro de téléphone et votre mot de passe.');
+      alert('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
 
       if (onToggle) {
         onToggle();
@@ -124,8 +117,23 @@ export default function Register({ onToggle }: RegisterProps) {
           </div>
 
           <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
+              placeholder="votre@email.com"
+            />
+          </div>
+
+          <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-              Numéro de téléphone
+              Téléphone
             </label>
             <input
               id="phone"
@@ -134,13 +142,8 @@ export default function Register({ onToggle }: RegisterProps) {
               onChange={(e) => setPhone(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
-              placeholder="07 01 02 03 04"
-              inputMode="tel"
-              autoComplete="tel"
+              placeholder="+225 XX XX XX XX XX"
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Ce numéro vous servira d'identifiant pour vous connecter.
-            </p>
           </div>
 
           <div>

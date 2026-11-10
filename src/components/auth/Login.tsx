@@ -2,11 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, ArrowLeft } from 'lucide-react';
-import { loginIdentifierToEmail } from '../../lib/phoneAuth';
-
-const FORGOT_PASSWORD_WHATSAPP = `https://wa.me/2250101723687?text=${encodeURIComponent(
-  "Bonjour SHIPP, j'ai oublié le mot de passe de mon compte parent. Mon numéro : "
-)}`;
 
 interface LoginProps {
   onToggle?: () => void;
@@ -14,7 +9,7 @@ interface LoginProps {
 
 export default function Login({ onToggle }: LoginProps) {
   const navigate = useNavigate();
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,23 +18,12 @@ export default function Login({ onToggle }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    const email = loginIdentifierToEmail(identifier);
-    if (!email) {
-      setError('Saisissez votre numéro de téléphone (10 chiffres) ou votre adresse e-mail.');
-      return;
-    }
-
     setLoading(true);
 
     const { error } = await signIn(email, password);
 
     if (error) {
-      setError(
-        /invalid login credentials/i.test(error.message)
-          ? 'Identifiant ou mot de passe incorrect.'
-          : error.message
-      );
+      setError(error.message);
       setLoading(false);
     } else {
       navigate('/auth-redirect');
@@ -79,22 +63,18 @@ export default function Login({ onToggle }: LoginProps) {
           )}
 
           <div>
-            <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-2">
-              Téléphone ou email
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email
             </label>
             <input
-              id="identifier"
-              type="text"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="username"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
-              placeholder="07 01 02 03 04"
+              placeholder="votre@email.com"
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Parents : votre numéro de téléphone. Centres partenaires : votre email.
-            </p>
           </div>
 
           <div>
@@ -120,17 +100,6 @@ export default function Login({ onToggle }: LoginProps) {
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
-
-          <div className="mt-4 text-center">
-            <a
-              href={FORGOT_PASSWORD_WHATSAPP}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
-            >
-              Mot de passe oublié ? Contactez SHIPP sur WhatsApp
-            </a>
-          </div>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
