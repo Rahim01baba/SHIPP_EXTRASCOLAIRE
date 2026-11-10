@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Download, DollarSign, Calendar, CheckCircle, AlertCircle, Clock, XCircle, User } from 'lucide-react';
 import { exportToCSV } from '../../lib/csvExport';
+import { displayEmail } from '../../lib/phoneAuth';
 
 interface Parent {
   id: string;
@@ -331,7 +332,7 @@ export default function PaymentsPage() {
             <option value="">-- Choisir un parent --</option>
             {parents.map(parent => (
               <option key={parent.id} value={parent.id}>
-                {parent.full_name} ({parent.email})
+                {parent.full_name} ({displayEmail(parent.email) === '—' ? parent.phone : parent.email})
               </option>
             ))}
           </select>

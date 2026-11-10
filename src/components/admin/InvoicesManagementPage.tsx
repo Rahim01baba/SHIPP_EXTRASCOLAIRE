@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Download, Check, Send, AlertCircle, FileText } from 'lucide-react';
 import { generateInvoicePDF, downloadInvoice } from '../../lib/invoiceGenerator';
 import { useAuth } from '../../contexts/AuthContext';
+import { displayEmail } from '../../lib/phoneAuth';
 
 interface Parent {
   id: string;
@@ -629,7 +630,7 @@ export default function InvoicesManagementPage() {
               <h3 className="font-semibold text-blue-900 mb-2">Informations parent</h3>
               <div className="space-y-1 text-sm">
                 <p><span className="text-gray-600">Nom:</span> <span className="font-medium">{parentDetails.full_name}</span></p>
-                <p><span className="text-gray-600">Email:</span> <span className="font-medium">{parentDetails.email}</span></p>
+                <p><span className="text-gray-600">Email:</span> <span className="font-medium">{displayEmail(parentDetails.email)}</span></p>
                 <p><span className="text-gray-600">Téléphone:</span> <span className="font-medium">{parentDetails.phone}</span></p>
               </div>
             </div>

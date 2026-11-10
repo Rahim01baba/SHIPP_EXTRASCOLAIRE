@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Download, Search, Eye } from 'lucide-react';
 import { exportToCSV } from '../../lib/csvExport';
 import ParentDetailsModal from './ParentDetailsModal';
+import { displayEmail } from '../../lib/phoneAuth';
 
 interface Parent {
   id: string;
@@ -150,7 +151,7 @@ export default function ParentsPage() {
                   <p className="font-medium">{parent.full_name}</p>
                 </td>
                 <td className="px-6 py-4">
-                  <p className="text-sm text-gray-900">{parent.email}</p>
+                  <p className="text-sm text-gray-900">{displayEmail(parent.email)}</p>
                   <p className="text-xs text-gray-500">{parent.phone}</p>
                 </td>
                 <td className="px-6 py-4 text-center">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, CheckCircle, XCircle, Download, Send } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateInvoicePDF, downloadInvoice } from '../../lib/invoiceGenerator';
+import { displayEmail } from '../../lib/phoneAuth';
 
 interface ParentDetailsModalProps {
   parentId: string;
@@ -314,7 +315,7 @@ export default function ParentDetailsModal({ parentId, onClose }: ParentDetailsM
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center rounded-t-xl">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{parent?.full_name}</h2>
-            <p className="text-sm text-gray-600">{parent?.email}</p>
+            <p className="text-sm text-gray-600">{displayEmail(parent?.email)}</p>
           </div>
           <button
             onClick={onClose}
