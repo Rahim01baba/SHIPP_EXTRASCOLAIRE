@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bus, Clock, Shield, Phone, Mail, HelpCircle, Building2, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import CategoryCentersSection from '../../components/public/CategoryCentersSection';
 
 interface Center {
   id: string;
@@ -14,7 +15,7 @@ export default function LandingPage() {
   const [validatedCenters, setValidatedCenters] = useState<Center[]>([]);
 
   const whatsappNumber = '2250101723687';
-  const whatsappMessage = encodeURIComponent('Bonjour SHIPP, je souhaite des informations sur le transport et les activités du samedi.');
+  const whatsappMessage = encodeURIComponent('Bonjour SHIPP, je souhaite des informations sur le transport et les activités extrascolaires.');
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   useEffect(() => {
@@ -70,10 +71,10 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl font-bold mb-6 leading-tight">
-                Transport et activités du samedi simplifiés
+                Transport et activités extrascolaires simplifiés
               </h1>
               <p className="text-xl mb-8 text-gray-300">
-                SHIPP organise le transport du samedi et facilite l'accès aux activités extrascolaires proposées par des centres partenaires indépendants.
+                SHIPP organise le transport et facilite l'accès aux activités extrascolaires et ludiques proposées par des centres partenaires indépendants.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
@@ -98,7 +99,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">Transport organisé</h3>
-                    <p className="text-gray-300">Chaque samedi vers les centres</p>
+                    <p className="text-gray-300">Vers les centres d'activités</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -154,7 +155,7 @@ export default function LandingPage() {
               {
                 step: '4',
                 title: 'Nous gérons tout',
-                description: 'SHIPP coordonne le transport du samedi et le lien avec les centres',
+                description: 'SHIPP coordonne le transport et le lien avec les centres',
                 icon: '✅',
               },
             ].map((item) => (
@@ -175,22 +176,7 @@ export default function LandingPage() {
           <p className="text-xl text-center text-gray-600 mb-16">
             Des activités de qualité pour tous les âges
           </p>
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            {[
-              { type: 'Musique', icon: '🎵', activities: 'Piano, Guitare, Chant' },
-              { type: 'Sport', icon: '⚽', activities: 'Football, Basketball, Natation' },
-              { type: 'Robotique', icon: '🤖', activities: 'Programmation, Électronique' },
-              { type: 'Arts', icon: '🎨', activities: 'Peinture, Dessin, Sculpture' },
-              { type: 'Langues', icon: '🌍', activities: 'Anglais, Français, Chinois' },
-              { type: 'Sciences', icon: '🔬', activities: 'Chimie, Physique, Biologie' },
-            ].map((center) => (
-              <div key={center.type} className="bg-gray-50 rounded-xl p-6 border-2 border-gray-100 hover:border-yellow-400 transition">
-                <div className="text-5xl mb-4">{center.icon}</div>
-                <h3 className="text-xl font-bold mb-2 text-black">{center.type}</h3>
-                <p className="text-gray-600">{center.activities}</p>
-              </div>
-            ))}
-          </div>
+          <CategoryCentersSection />
 
           <div className="text-center">
             <button
@@ -257,8 +243,8 @@ export default function LandingPage() {
                 a: 'Un seul paiement mensuel couvre à la fois le cours et le transport. Vous recevez une facture détaillée avec le tarif du cours et le tarif du transport.',
               },
               {
-                q: 'Quels jours sont les activités ?',
-                a: 'Toutes les activités ont lieu le samedi. Le transport est organisé spécialement pour ce jour.',
+                q: 'Quels jours ont lieu les activités ?',
+                a: 'Les jours et horaires dépendent de chaque activité et sont indiqués dans la fiche du centre. Le transport est organisé en fonction de ces créneaux.',
               },
               {
                 q: 'Comment est assuré le transport ?',
