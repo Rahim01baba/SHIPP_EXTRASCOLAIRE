@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bus, Clock, Shield, Phone, Mail, HelpCircle, Building2, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import CategoryCentersSection from '../../components/public/CategoryCentersSection';
 
 interface Center {
   id: string;
@@ -175,22 +176,7 @@ export default function LandingPage() {
           <p className="text-xl text-center text-gray-600 mb-16">
             Des activités de qualité pour tous les âges
           </p>
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            {[
-              { type: 'Musique', icon: '🎵', activities: 'Piano, Guitare, Chant' },
-              { type: 'Sport', icon: '⚽', activities: 'Football, Basketball, Natation' },
-              { type: 'Robotique', icon: '🤖', activities: 'Programmation, Électronique' },
-              { type: 'Arts', icon: '🎨', activities: 'Peinture, Dessin, Sculpture' },
-              { type: 'Langues', icon: '🌍', activities: 'Anglais, Français, Chinois' },
-              { type: 'Sciences', icon: '🔬', activities: 'Chimie, Physique, Biologie' },
-            ].map((center) => (
-              <div key={center.type} className="bg-gray-50 rounded-xl p-6 border-2 border-gray-100 hover:border-yellow-400 transition">
-                <div className="text-5xl mb-4">{center.icon}</div>
-                <h3 className="text-xl font-bold mb-2 text-black">{center.type}</h3>
-                <p className="text-gray-600">{center.activities}</p>
-              </div>
-            ))}
-          </div>
+          <CategoryCentersSection />
 
           <div className="text-center">
             <button
